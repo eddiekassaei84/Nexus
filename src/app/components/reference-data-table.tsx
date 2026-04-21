@@ -10,6 +10,8 @@ import flatListPaths from '../../imports/svg-nyr7fyunsb';
 import hierarchyPaths from '../../imports/svg-a562f27wh3';
 import { FlatRefTable, refItemsToFlatGroups } from './flat-ref-table';
 import type { FlatGroup, FlatRefTableHandle } from './flat-ref-table';
+import { ImportRefDataModal, downloadRefDataTemplate } from './import-refdata-modal';
+import { ExportRefDataModal } from './export-refdata-modal';
 const P_PLUS_VERTICAL = 'M10.9998 5.82818e-08L10.9998 22';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -8177,39 +8179,37 @@ function PrimaryEditBtn({ onClick }: { onClick: () => void }) {
     </button>
   );
 }
-function RemoveBtn({ onClick }: { onClick: () => void }) {
-  const [hov, setHov]       = useState(false);
-  const [pressed, setPressed] = useState(false);
-  const iconColor = pressed ? '#FFFFFF' : '#616D79';
+function RestoreDefaultBtn({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false);
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => { setHov(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setHov(false)}
       style={{
-        height: 36, display: 'flex', alignItems: 'center', gap: 4,
-        paddingLeft: 16, paddingRight: 16,
-        background: pressed ? '#616D79' : hov ? '#E5E7E9' : 'transparent',
-        border: 'none', borderRadius: 4, cursor: 'pointer',
+        height: 36, display: 'flex', alignItems: 'center',
+        background: 'none', border: 'none', borderRadius: 4,
+        cursor: 'pointer', padding: '0 8px',
         fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400,
-        color: pressed ? '#FFFFFF' : '#616D79',
-        whiteSpace: 'nowrap', transition: 'background 0.15s',
+        color: '#616D79',
+        textDecoration: hov ? 'underline' : 'none',
+        whiteSpace: 'nowrap', transition: 'text-decoration 0.15s',
       }}
     >
-      <svg width="14" height="14" viewBox="0 0 14.6239 16.875" fill="none" style={{ flexShrink: 0 }}>
-        <path d={trashPaths.pc0b2e00} fill={iconColor} />
-      </svg>
-      <span>Remove</span>
+      Restore Default
     </button>
   );
 }
 function CancelBtn({ onClick }: { onClick: () => void }) {
   const [hov, setHov] = useState(false);
+  const [pressed, setPressed] = useState(false);
   return (
-    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 16, paddingRight: 16, background: hov ? '#E5E7E9' : '#F2F3F4', border: `1px solid ${hov ? '#616D79' : '#C3C7CC'}`, borderRadius: 4, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#616D79', whiteSpace: 'nowrap', transition: 'background 0.15s, border-color 0.15s' }}>
+    <button onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => { setHov(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 16, paddingRight: 16, background: pressed ? '#616D79' : hov ? '#E5E7E9' : 'transparent', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: pressed ? '#FFFFFF' : '#616D79', whiteSpace: 'nowrap', transition: 'background 0.15s' }}>
       Cancel
     </button>
   );
@@ -8978,6 +8978,9 @@ export function ReferenceDataTable({
   const [activeTabId, setActiveTabId] = useState((initTabs ?? INITIAL_TABS)[0]?.id ?? 'trade');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [restoreDefaultOpen, setRestoreDefaultOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [renamingTabId, setRenamingTabId]     = useState<string | null>(null);
 
   // ── Flat-tab live data (shared backend for all structureType === 'flat' tabs)
@@ -9391,14 +9394,9 @@ export function ReferenceDataTable({
     });
   }
 
-  // Download stub
+  // Download sample / template
   function downloadTemplate() {
-    const prefix = activeTabPrefix;
-    const csv = `${prefix} Code,${prefix} Name,${prefix} Description\n`;
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = `${activeTab.label.replace(/\s+/g, '_')}_template.csv`; a.click();
-    URL.revokeObjectURL(url);
+    downloadRefDataTemplate(activeTab.structureType ?? 'flat', activeTab.label, activeTab.id);
   }
 
   return (
@@ -9412,14 +9410,42 @@ export function ReferenceDataTable({
         />
       )}
 
-      {/* Remove Reference Data Modal */}
-      {removeModalOpen && (
+      {/* Remove Reference Data Modal */}      {removeModalOpen && (
         <RemoveTabModal
           tabLabel={activeTab.label}
           onConfirm={removeActiveTab}
           onClose={() => setRemoveModalOpen(false)}
         />
       )}
+
+      {/* Import Reference Data Modal */}
+      <ImportRefDataModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        tabLabel={activeTab.label}
+        tabId={activeTab.id}
+        structureType={activeTab.structureType ?? 'flat'}
+        onImport={(importedItems) => {
+          setTabs(prev => prev.map(t =>
+            t.id === activeTabId
+              ? { ...t, items: importedItems as RefItem[] }
+              : t
+          ));
+          setImportModalOpen(false);
+        }}
+      />
+
+      {/* Export Reference Data Modal */}
+      <ExportRefDataModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        tabLabel={activeTab.label}
+        structureType={activeTab.structureType ?? 'flat'}
+        items={activeTab.items as RefItem[]}
+        flatGroups={flatTabsData[activeTab.id] ?? []}
+        groupLabel={activeTab.id === 'phases' ? 'Phase' : activeTab.label}
+        itemLabel={activeTab.id === 'phases' ? 'Sub-phase' : 'Item'}
+      />
 
       {/* Delete Row Warning Modal */}
       {deleteRowWarning && (
@@ -9452,11 +9478,11 @@ export function ReferenceDataTable({
           />
         ))}
 
-        {/* Add tab */}
+        {/* Add tab — HIDDEN (keep code, not shown in UI) */}
         <button
           onClick={() => !editMode && setCreateModalOpen(true)}
           title="Create new reference data"
-          style={{ height: 44, width: 48, background: '#FAFAFA', border: '1px solid #F0F0F0', borderBottom: '1px solid #F0F0F0', borderRadius: '4px 4px 0 0', cursor: editMode ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: editMode ? 0.4 : 1 }}
+          style={{ height: 44, width: 48, background: '#FAFAFA', border: '1px solid #F0F0F0', borderBottom: '1px solid #F0F0F0', borderRadius: '4px 4px 0 0', cursor: editMode ? 'default' : 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: editMode ? 0.4 : 1 }}
         >
           <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
             <path d="M0 11H22" stroke="#FF4D00" strokeWidth="2" />
@@ -9525,13 +9551,14 @@ export function ReferenceDataTable({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {editMode ? (
+            {editMode && activeTab.structureType === 'flat' ? (
               <>
-                <RemoveBtn onClick={() => setRemoveModalOpen(true)} />
+                <RestoreDefaultBtn onClick={() => setRestoreDefaultOpen(true)} />
                 <CancelBtn onClick={() => {
                   if (activeTab.structureType === 'flat') { flatRef.current?.cancelEdit(); }
                   cancelEdit();
                 }} />
+                <SecondaryBtn onClick={() => setImportModalOpen(true)}><ImportIcon /><span>Import</span></SecondaryBtn>
                 <SaveBtn onClick={() => {
                   if (activeTab.structureType === 'flat') { flatRef.current?.saveEdit(); return; }
                   saveEdit();
@@ -9542,12 +9569,16 @@ export function ReferenceDataTable({
                 <button onClick={downloadTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
                   Download Import Template
                 </button>
-                <SecondaryBtn onClick={() => {}}><ImportIcon /><span>Import</span></SecondaryBtn>
-                <SecondaryBtn onClick={() => {}}><ExportIcon /><span>Export</span></SecondaryBtn>
-                <PrimaryEditBtn onClick={() => {
-                  if (activeTab.structureType === 'flat') { flatRef.current?.startEdit(); }
-                  enterEditMode();
-                }} />
+                {activeTab.structureType === 'hierarchy' && (
+                  <SecondaryBtn onClick={() => setImportModalOpen(true)}><ImportIcon /><span>Import</span></SecondaryBtn>
+                )}
+                <SecondaryBtn onClick={() => setExportModalOpen(true)}><ExportIcon /><span>Export</span></SecondaryBtn>
+                {activeTab.structureType !== 'hierarchy' && (
+                  <PrimaryEditBtn onClick={() => {
+                    if (activeTab.structureType === 'flat') { flatRef.current?.startEdit(); }
+                    enterEditMode();
+                  }} />
+                )}
               </>
             )}
           </div>
@@ -9582,13 +9613,13 @@ export function ReferenceDataTable({
               {editMode && <div style={{ width: 24, flexShrink: 0, background: '#FAFAFA' }} />}
               {isFlatList ? (
                 <>
-                  <RefHeaderCell label={`${activeTabPrefix} Name`} sortKey="name" sortState={sortState} onSort={() => handleSort('name')} style={{ width: colWidths.name }} editMode={editMode} colKey="name" onDelta={onColDelta} showResize />
-                  <RefHeaderCell label={`${activeTabPrefix} Code`} sortKey="code" sortState={sortState} onSort={() => handleSort('code')} style={{ width: colWidths.code }} editMode={editMode} colKey="code" onDelta={onColDelta} showResize />
+                  <RefHeaderCell label="Title" sortKey="name" sortState={sortState} onSort={() => handleSort('name')} style={{ width: colWidths.name }} editMode={editMode} colKey="name" onDelta={onColDelta} showResize />
+                  <RefHeaderCell label="Code" sortKey="code" sortState={sortState} onSort={() => handleSort('code')} style={{ width: colWidths.code }} editMode={editMode} colKey="code" onDelta={onColDelta} showResize />
                 </>
               ) : (
                 <>
-                  <RefHeaderCell label={`${activeTabPrefix} Code`} sortKey="code" sortState={sortState} onSort={() => handleSort('code')} style={{ width: colWidths.code }} editMode={editMode} colKey="code" onDelta={onColDelta} showResize />
-                  <RefHeaderCell label={`${activeTabPrefix} Name`} sortKey="name" sortState={sortState} onSort={() => handleSort('name')} style={{ width: colWidths.name }} editMode={editMode} colKey="name" onDelta={onColDelta} showResize />
+                  <RefHeaderCell label="Code" sortKey="code" sortState={sortState} onSort={() => handleSort('code')} style={{ width: colWidths.code }} editMode={editMode} colKey="code" onDelta={onColDelta} showResize />
+                  <RefHeaderCell label="Title" sortKey="name" sortState={sortState} onSort={() => handleSort('name')} style={{ width: colWidths.name }} editMode={editMode} colKey="name" onDelta={onColDelta} showResize />
                 </>
               )}
               <RefHeaderCell label={`Note`} sortKey="description" sortState={sortState} onSort={() => handleSort('description')} style={{ flex: 1, minWidth: COL_DESC_MIN }} editMode={editMode} />

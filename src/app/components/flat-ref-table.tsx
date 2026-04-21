@@ -509,7 +509,7 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
           <div style={{ display: 'flex', alignItems: 'stretch', height: HEADER_H, background: '#FAFAFA', borderBottom: '1px solid #F0F0F0', position: 'sticky', top: 0, zIndex: 20 }}>
             <div style={{ width: C_DRAG, flexShrink: 0 }} />
             <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>
-              {groupLabel} / {itemLabel} Name <span style={{ color: '#FF4D4F', marginLeft: 2 }}>*</span>
+              {groupLabel} / {itemLabel} Title <span style={{ color: '#FF4D4F', marginLeft: 2 }}>*</span>
             </div>
             <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>
               Code <span style={{ color: '#FF4D4F', marginLeft: 2 }}>*</span>
@@ -676,7 +676,7 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
       {!editMode && grouped && (
         <div style={{ minWidth: C_NAME + C_CODE + C_TYPE + COL_NOTE + 36 }}>
           <div style={{ display: 'flex', alignItems: 'stretch', height: HEADER_H, background: '#FAFAFA', borderBottom: '1px solid #E8EAED', position: 'sticky', top: 0, zIndex: 10 }}>
-            <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Name</div>
+            <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Title</div>
             <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Code</div>
             <div style={{ width: C_TYPE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Type</div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingLeft: 10, fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Note</div>

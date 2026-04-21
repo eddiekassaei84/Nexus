@@ -4,6 +4,8 @@ import trashPaths   from '../../imports/svg-fjqvq36uqo';
 import siblingPaths from '../../imports/svg-dwr8dix3rb';
 import chevronDownPaths  from '../../imports/svg-0ujzuiicjd';
 import chevronRightPaths from '../../imports/svg-kphlmu302k';
+import { ImportDisciplineModal, downloadDisciplineTemplate } from './import-discipline-modal';
+import { ExportDisciplineModal } from './export-discipline-modal';
 // Shared backend types — DisciplineGroup and Phases use the same flat-list data model
 import type { FlatGroup, FlatItem } from './flat-ref-table';
 
@@ -637,91 +639,26 @@ function ToolbarBtn({ onClick, children, disabled = false }: { onClick: () => vo
     </button>
   );
 }
-
-// ─── Simple Import Modal ──────────────────────────────────────────────────────
-function ImportModal({ onClose }: { onClose: () => void }) {
-  return ReactDOM.createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ width: 480, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.24)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, padding: '0 24px' }}>
-            <p style={{ fontFamily: "'Actor', sans-serif", fontWeight: 400, fontSize: 24, lineHeight: '28.8px', color: '#1B2736', margin: 0 }}>Import Disciplines & Trades</p>
-            <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 40, padding: 8 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#F5F6F7')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="#384857" strokeWidth="1.5" strokeLinecap="round" /></svg>
-            </button>
-          </div>
-          <div style={{ height: 1, background: '#F0F0F0' }} />
-        </div>
-        <div style={{ padding: '24px 28px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ border: '2px dashed #D0D5DD', borderRadius: 8, padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: '#FAFAFA', cursor: 'pointer' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = '#FF4D00')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#D0D5DD')}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="#9CA4AE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#384857' }}>Drag & drop a CSV file, or <span style={{ color: '#FF4D00', cursor: 'pointer' }}>browse</span></span>
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#9CA4AE' }}>Supported format: CSV · Max 5 MB</span>
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, marginTop: 16 }}>
-          <div style={{ height: 1, background: '#C3C7CC' }} />
-          <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 28px', gap: 10 }}>
-            <SecBtn onClick={onClose}>Cancel</SecBtn>
-            <PriBtn onClick={onClose}>Import</PriBtn>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+function TerBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => { setHov(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)}
+      style={{ height: 36, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 6, border: 'none', borderRadius: 4, background: pressed ? '#616D79' : hov ? '#E5E7E9' : 'transparent', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: pressed ? '#FFFFFF' : '#616D79', whiteSpace: 'nowrap', transition: 'background 0.15s, color 0.15s' }}>
+      {children}
+    </button>
   );
 }
-
-// ─── Simple Export Modal ──────────────────────────────────────────────────────
-function ExportModal({ groups, onClose }: { groups: DisciplineGroup[]; onClose: () => void }) {
-  const handleExport = () => {
-    const rows = ['Discipline,Discipline Code,Trade,Trade Code,Description'];
-    for (const g of groups) {
-      for (const c of g.children) {
-        rows.push(`"${g.name}","${g.code}","${c.name}","${c.code}","${c.description}"`);
-      }
-    }
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'discipline-trade.csv'; a.click();
-    onClose();
-  };
-  return ReactDOM.createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ width: 460, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.24)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, padding: '0 24px' }}>
-            <p style={{ fontFamily: "'Actor', sans-serif", fontWeight: 400, fontSize: 24, lineHeight: '28.8px', color: '#1B2736', margin: 0 }}>Export Disciplines & Trades</p>
-            <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 40, padding: 8 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#F5F6F7')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="#384857" strokeWidth="1.5" strokeLinecap="round" /></svg>
-            </button>
-          </div>
-          <div style={{ height: 1, background: '#F0F0F0' }} />
-        </div>
-        <div style={{ padding: '24px 28px 0' }}>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#384857', margin: 0, lineHeight: '22px' }}>
-            Export all <strong>{groups.reduce((s, g) => s + g.children.length, 0)} trades</strong> across <strong>{groups.length} disciplines</strong> as a CSV file.
-          </p>
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#8C8C8C', margin: '8px 0 0', lineHeight: '20px' }}>
-            Columns: Discipline · Discipline Code · Trade · Trade Code · Description
-          </p>
-        </div>
-        <div style={{ flexShrink: 0, marginTop: 24 }}>
-          <div style={{ height: 1, background: '#C3C7CC' }} />
-          <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 28px', gap: 10 }}>
-            <SecBtn onClick={onClose}>Cancel</SecBtn>
-            <PriBtn onClick={handleExport}>Download CSV</PriBtn>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+function RestoreDefaultLink({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ background: 'none', border: 'none', padding: '0 4px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#616D79', textDecoration: hov ? 'underline' : 'none', whiteSpace: 'nowrap', transition: 'text-decoration 0.15s' }}>
+      Restore Defaults
+    </button>
   );
 }
 
@@ -1205,11 +1142,9 @@ export function DisciplineTable() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {editMode ? (
             <>
-              <SecBtn onClick={() => setRestoreOpen(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="#616D79" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M3 3v5h5" stroke="#616D79" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <span>Restore Defaults</span>
-              </SecBtn>
-              <SecBtn onClick={cancelEdit}>Cancel</SecBtn>
+              <RestoreDefaultLink onClick={() => setRestoreOpen(true)} />
+              <TerBtn onClick={cancelEdit}>Cancel</TerBtn>
+              <SecBtn onClick={() => setImportOpen(true)}><ImportIcon /><span>Import</span></SecBtn>
               <PriBtn onClick={saveEdit}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><polyline points="17 21 17 13 7 13 7 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><polyline points="7 3 7 8 15 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 <span>Save Changes</span>
@@ -1217,7 +1152,21 @@ export function DisciplineTable() {
             </>
           ) : (
             <>
-              <SecBtn onClick={() => setImportOpen(true)}><ImportIcon /><span>Import</span></SecBtn>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M7.5 1.875v7.5M4.375 6.25L7.5 9.375l3.125-3.125" stroke="#1890FF" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.40625" />
+                  <path d="M1.875 11.25H13.125" stroke="#1890FF" strokeLinecap="round" strokeWidth="1.40625" />
+                </svg>
+                <button
+                  onClick={() => downloadDisciplineTemplate('disciplines')}
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: 13, color: '#1890FF', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap', transition: 'opacity 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                >
+                  Download Import Template
+                </button>
+              </div>
+              <div style={{ width: 1, height: 24, background: '#D9D9D9', flexShrink: 0 }} />
               <SecBtn onClick={() => setExportOpen(true)}><ExportIcon /><span>Export</span></SecBtn>
               <PriBtn onClick={enterEditMode}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -1532,8 +1481,19 @@ export function DisciplineTable() {
       </div>
 
       {/* ── Modals ─────────────────────────────────────────────────────── */}
-      {importOpen && <ImportModal onClose={() => setImportOpen(false)} />}
-      {exportOpen && <ExportModal groups={liveData} onClose={() => setExportOpen(false)} />}
+      <ImportDisciplineModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={(imported) => {
+          setLiveData(imported as DisciplineGroup[]);
+          setImportOpen(false);
+        }}
+      />
+      <ExportDisciplineModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        groups={liveData}
+      />
       {restoreOpen && <RestoreConfirmModal onConfirm={restoreDefaults} onClose={() => setRestoreOpen(false)} />}
     </div>
   );
