@@ -38,152 +38,152 @@ let _uid = 0;
 function uid() { return `dt_${Date.now()}_${++_uid}`; }
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
-function mkT(id: string, code: string, name: string, description: string): TradeEntry {
-  return { id, code, name, description, active: true, disciplineId: null };
+function mkT(id: string, code: string, name: string): TradeEntry {
+  return { id, code, name, description: '', active: true, disciplineId: null };
 }
 
 export const DISCIPLINE_DATA: DisciplineGroup[] = [
   {
     id: 'civil-site', name: 'Civil & Site Works', code: 'CIVIL',
-    description: 'Civil engineering, earthworks, utilities, and site preparation trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-gc',   'GC',    'General Contractor',    'Prime contractor responsible for overall project delivery, subcontractor coordination, and site management'),
-      mkT('t-cm',   'CM',    'Construction Management','Professional services managing schedule, cost, quality, and coordination on behalf of the owner'),
-      mkT('t-civil','CIVIL', 'Civil',                  'Civil engineering works including grading, drainage, roads, and site infrastructure'),
-      mkT('t-site', 'SITE',  'Sitework',               'Preparatory site activities including clearing, grubbing, erosion control, and temporary facilities'),
-      mkT('t-erth', 'EARTH', 'Earthworks',             'Mass excavation, cut-and-fill operations, compaction, and engineered fill placement'),
-      mkT('t-excv', 'EXCAV', 'Excavation',             'Trenching, pit excavation, and shoring for foundations, utilities, and below-grade structures'),
-      mkT('t-util', 'UTIL',  'Utilities',              'Installation of underground wet and dry utilities including water, sewer, gas, and electrical conduit'),
-      mkT('t-drn',  'DRAIN', 'Drainage',               'Surface and subsurface drainage systems including swales, detention, French drains, and storm culverts'),
-      mkT('t-road', 'ROAD',  'Roadwork / Paving',      'Subbase preparation, asphalt and concrete paving, kerbing, line marking, and traffic management infrastructure'),
-      mkT('t-land', 'LAND',  'Landscaping',            'Soft landscaping, turf, planting, irrigation, and site amenity works'),
-      mkT('t-demo', 'DEMO',  'Demolition',             'Selective and structural demolition, deconstruction, and hazardous material abatement'),
-      mkT('t-surv', 'SURV',  'Surveying',              'Land surveying, as-built documentation, setout, and dimensional control throughout construction'),
+      mkT('t-gc',   'GC',    'General Contractor'),
+      mkT('t-cm',   'CM',    'Construction Management'),
+      mkT('t-civil','CIVIL', 'Civil'),
+      mkT('t-site', 'SITE',  'Sitework'),
+      mkT('t-erth', 'EARTH', 'Earthworks'),
+      mkT('t-excv', 'EXCAV', 'Excavation'),
+      mkT('t-util', 'UTIL',  'Utilities'),
+      mkT('t-drn',  'DRAIN', 'Drainage'),
+      mkT('t-road', 'ROAD',  'Roadwork / Paving'),
+      mkT('t-land', 'LAND',  'Landscaping'),
+      mkT('t-demo', 'DEMO',  'Demolition'),
+      mkT('t-surv', 'SURV',  'Surveying'),
     ],
   },
   {
     id: 'structural', name: 'Structural', code: 'STRUCT',
-    description: 'Structural systems including steel, concrete, masonry, and framing trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-steel','STEEL', 'Structural Steel',   'Fabrication, delivery, and erection of structural steel frames, columns, beams, and connections'),
-      mkT('t-conc', 'CONC',  'Concrete',           'Formwork, reinforcement placement, concrete supply, and finishing for cast-in-place elements'),
-      mkT('t-prec', 'PREC',  'Precast Concrete',   'Off-site manufacture and on-site erection of precast structural and architectural concrete elements'),
-      mkT('t-rebr', 'REBAR', 'Reinforcing Steel',  'Detailing, supply, bending, and placement of reinforcing bar and post-tensioning systems'),
-      mkT('t-msry', 'MSRY',  'Masonry',            'Brick, block, natural stone, and mortar construction for walls, piers, and architectural features'),
-      mkT('t-fram', 'FRAM',  'Framing',            'Structural timber and light-gauge steel framing for floors, walls, and roof structures'),
-      mkT('t-carp', 'CARP',  'Carpentry',          'Rough and finish carpentry including blocking, backing, trim, and site-built timber elements'),
+      mkT('t-steel','STEEL', 'Structural Steel'),
+      mkT('t-conc', 'CONC',  'Concrete'),
+      mkT('t-prec', 'PREC',  'Precast Concrete'),
+      mkT('t-rebr', 'REBAR', 'Reinforcing Steel'),
+      mkT('t-msry', 'MSRY',  'Masonry'),
+      mkT('t-fram', 'FRAM',  'Framing'),
+      mkT('t-carp', 'CARP',  'Carpentry'),
     ],
   },
   {
     id: 'envelope', name: 'Building Envelope', code: 'ENVLP',
-    description: 'Roofing, waterproofing, cladding, glazing, and external enclosure trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-roof', 'ROOF',  'Roofing',               'Membrane, metal, tile, and built-up roofing systems including flashings and penetration details'),
-      mkT('t-wtpf', 'WTPF',  'Waterproofing',         'Below-grade and above-grade waterproofing membranes, coatings, and joint sealant systems'),
-      mkT('t-clad', 'CLAD',  'Facade / Cladding',     'External cladding systems including composite panels, terracotta, stone, and rain-screen assemblies'),
-      mkT('t-curt', 'CURT',  'Curtain Wall',          'Unitised and stick-built aluminium curtain wall, spandrel panels, and structural silicone glazing'),
-      mkT('t-glaz', 'GLAZ',  'Windows & Glazing',     'Aluminium window frames, storefront systems, skylights, and architectural glass supply and installation'),
-      mkT('t-door', 'DOOR',  'Doors & Hardware',      'Interior and exterior door frames, door leaves, overhead doors, access control hardware, and ironmongery'),
-      mkT('t-insl', 'INSUL', 'Insulation',            'Thermal and acoustic insulation for walls, roofs, floors, and mechanical systems'),
+      mkT('t-roof', 'ROOF',  'Roofing'),
+      mkT('t-wtpf', 'WTPF',  'Waterproofing'),
+      mkT('t-clad', 'CLAD',  'Facade / Cladding'),
+      mkT('t-curt', 'CURT',  'Curtain Wall'),
+      mkT('t-glaz', 'GLAZ',  'Windows & Glazing'),
+      mkT('t-door', 'DOOR',  'Doors & Hardware'),
+      mkT('t-insl', 'INSUL', 'Insulation'),
     ],
   },
   {
     id: 'interior-finishes', name: 'Interior Finishes', code: 'INTFN',
-    description: 'Drywall, ceilings, flooring, painting, millwork, and interior finish trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-dryw', 'DRYW',  'Drywall / Partitions',  'Gypsum board, metal stud framing, fire-rated partitions, shaft walls, and acoustic assemblies'),
-      mkT('t-ceil', 'CEIL',  'Ceiling Systems',       'Suspended acoustic tile ceilings, drywall soffits, stretched fabric, and specialty ceiling systems'),
-      mkT('t-flor', 'FLOOR', 'Flooring',              'Ceramic tile, carpet, hardwood, vinyl, polished concrete, epoxy, and specialty raised floor systems'),
-      mkT('t-pnt',  'PAINT', 'Painting & Coatings',   'Interior and exterior painting, specialised coatings, intumescent fire protection, and surface preparation'),
-      mkT('t-fin',  'FINSH', 'Finishes',              'General interior finishes scope covering wall, floor, and ceiling materials not classified under a specific trade'),
-      mkT('t-mill', 'MILL',  'Millwork / Casework',   'Architectural millwork, custom joinery, built-in cabinetry, reception counters, and decorative timber elements'),
+      mkT('t-dryw', 'DRYW',  'Drywall / Partitions'),
+      mkT('t-ceil', 'CEIL',  'Ceiling Systems'),
+      mkT('t-flor', 'FLOOR', 'Flooring'),
+      mkT('t-pnt',  'PAINT', 'Painting & Coatings'),
+      mkT('t-fin',  'FINSH', 'Finishes'),
+      mkT('t-mill', 'MILL',  'Millwork / Casework'),
     ],
   },
   {
     id: 'mechanical', name: 'Mechanical & HVAC', code: 'MECH',
-    description: 'HVAC, mechanical plant, refrigeration, ductwork, and building automation trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-hvac', 'HVAC', 'HVAC',               'Heating, ventilation, and air conditioning systems including air handling units, FCUs, and distribution'),
-      mkT('t-mech', 'MECH', 'Mechanical',          'General mechanical scope encompassing HVAC, refrigeration, plumbing, and related building services plant'),
-      mkT('t-refr', 'REFR', 'Refrigeration',       'Industrial and commercial refrigeration plant, cold rooms, process cooling, and refrigerant pipework'),
-      mkT('t-duct', 'DUCT', 'Ductwork',            'Sheet-metal ductwork fabrication and installation for supply air, return air, and exhaust systems'),
-      mkT('t-bas',  'BAS',  'Building Automation', 'Building management systems (BMS/BAS), DDC controls, sensors, actuators, and central SCADA platforms'),
+      mkT('t-hvac', 'HVAC', 'HVAC'),
+      mkT('t-mech', 'MECH', 'Mechanical'),
+      mkT('t-refr', 'REFR', 'Refrigeration'),
+      mkT('t-duct', 'DUCT', 'Ductwork'),
+      mkT('t-bas',  'BAS',  'Building Automation'),
     ],
   },
   {
     id: 'electrical', name: 'Electrical', code: 'ELEC',
-    description: 'Electrical, power distribution, lighting, low-voltage, and communications trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-elec', 'ELEC',  'Electrical',              'Complete electrical scope including main switchgear, distribution boards, wiring, and final connections'),
-      mkT('t-powr', 'POWR',  'Power Distribution',      'High and low voltage switchboards, transformers, UPS, generator sets, and power reticulation systems'),
-      mkT('t-lght', 'LIGHT', 'Lighting',                'Interior and exterior luminaire supply and installation, lighting controls, and emergency lighting'),
-      mkT('t-lvlt', 'LVLT',  'Low Voltage',             'Structured cabling, AV systems, nurse call, MATV, access control wiring, and low-voltage containment'),
-      mkT('t-falm', 'FALM',  'Fire Alarm',              'Addressable fire detection and alarm systems, smoke and heat detectors, panels, and public address integration'),
-      mkT('t-sec',  'SEC',   'Security Systems',        'CCTV, intruder detection, access control, intercom, and electronic security integration'),
-      mkT('t-comm', 'COMM',  'Communications / Data',   'Telecommunications infrastructure, structured data cabling, server room fit-out, and fibre optic networks'),
+      mkT('t-elec', 'ELEC',  'Electrical'),
+      mkT('t-powr', 'POWR',  'Power Distribution'),
+      mkT('t-lght', 'LIGHT', 'Lighting'),
+      mkT('t-lvlt', 'LVLT',  'Low Voltage'),
+      mkT('t-falm', 'FALM',  'Fire Alarm'),
+      mkT('t-sec',  'SEC',   'Security Systems'),
+      mkT('t-comm', 'COMM',  'Communications / Data'),
     ],
   },
   {
     id: 'plumbing-fire', name: 'Plumbing & Fire Protection', code: 'PLBFR',
-    description: 'Plumbing, piping, gas systems, and fire suppression trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-plmb', 'PLMB', 'Plumbing',                   'Domestic cold and hot water systems, sanitary drainage, storm drainage, and fixtures and fittings'),
-      mkT('t-pipe', 'PIPE', 'Piping',                     'Process and services piping systems including hydraulics, compressed air, medical gas, and steam'),
-      mkT('t-gas',  'GAS',  'Gas Systems',                'Natural gas supply, LP gas, medical gas, and specialised gas distribution systems and equipment'),
-      mkT('t-fire', 'FIRE', 'Fire Protection / Sprinklers','Wet, dry, and pre-action sprinkler systems, hydrant mains, fire hose reels, and suppression systems'),
+      mkT('t-plmb', 'PLMB', 'Plumbing'),
+      mkT('t-pipe', 'PIPE', 'Piping'),
+      mkT('t-gas',  'GAS',  'Gas Systems'),
+      mkT('t-fire', 'FIRE', 'Fire Protection / Sprinklers'),
     ],
   },
   {
     id: 'vertical-transport', name: 'Vertical Transport', code: 'VTRAN',
-    description: 'Elevator, escalator, and conveying system trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-elev', 'ELEV', 'Elevators & Escalators', 'Passenger lifts, service elevators, escalators, moving walkways, and associated shaft and pit works'),
+      mkT('t-elev', 'ELEV', 'Elevators & Escalators'),
     ],
   },
   {
     id: 'specialty', name: 'Specialty Systems', code: 'SPEC',
-    description: 'Kitchen, medical, laboratory, acoustic, signage, and waste management trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-ktch', 'KITCH', 'Kitchen Equipment',    'Commercial kitchen equipment, exhaust hoods, cold rooms, dishwash systems, and catering infrastructure'),
-      mkT('t-med',  'MED',   'Medical Equipment',    'Specialised medical and clinical equipment including imaging, operating theatre, and patient care systems'),
-      mkT('t-lab',  'LAB',   'Laboratory Equipment', 'Fume cupboards, safety cabinets, lab benches, specialist services, and scientific equipment installations'),
-      mkT('t-acst', 'ACST',  'Acoustics',            'Acoustic treatment, sound isolation, noise and vibration control, and performance ceiling and wall systems'),
-      mkT('t-sign', 'SIGN',  'Signage',              'Wayfinding, statutory, identification, digital display, and architectural signage systems'),
-      mkT('t-wste', 'WASTE', 'Waste Management',     'On-site waste sorting, skip and bin management, recycling programs, and disposal compliance'),
+      mkT('t-ktch', 'KITCH', 'Kitchen Equipment'),
+      mkT('t-med',  'MED',   'Medical Equipment'),
+      mkT('t-lab',  'LAB',   'Laboratory Equipment'),
+      mkT('t-acst', 'ACST',  'Acoustics'),
+      mkT('t-sign', 'SIGN',  'Signage'),
+      mkT('t-wste', 'WASTE', 'Waste Management'),
     ],
   },
   {
     id: 'hsq', name: 'Health, Safety & Quality', code: 'HSQ',
-    description: 'Safety management, quality assurance, inspection, and commissioning trades.',
+    description: '',
     active: true,
     children: [
-      mkT('t-safe', 'SAFE', 'Safety',          'Site safety management, PPE, fall protection, scaffolding, barriers, and WHS regulatory compliance'),
-      mkT('t-qa',   'QAQC', 'Quality / QAQC',  'Quality assurance and quality control programs, inspection and test plans, non-conformance management'),
-      mkT('t-insp', 'INSP', 'Inspection',      'Third-party and statutory inspection services including structural, building, and special inspections'),
-      mkT('t-cmsn', 'CMSN', 'Commissioning',   'System commissioning, performance testing, balancing, and operational readiness verification'),
+      mkT('t-safe', 'SAFE', 'Safety'),
+      mkT('t-qa',   'QAQC', 'Quality / QAQC'),
+      mkT('t-insp', 'INSP', 'Inspection'),
+      mkT('t-cmsn', 'CMSN', 'Commissioning'),
     ],
   },
   {
     id: 'professional', name: 'Professional Services', code: 'PROF',
-    description: 'BIM, design, engineering, environmental, sustainability, and FM professional services.',
+    description: '',
     active: true,
     children: [
-      mkT('t-bim',    'BIM',    'BIM / VDC',                'Building information modelling, clash detection, 4D scheduling, model coordination, and digital delivery'),
-      mkT('t-arch',   'ARCH',   'Design / Architecture',    'Architectural design, documentation, contract administration, and design management services'),
-      mkT('t-seng',   'SENG',   'Structural Engineering',   'Structural design, analysis, certification, and field engineering for all structural systems'),
-      mkT('t-mepeng', 'MEPENG', 'MEP Engineering',          'Mechanical, electrical, and plumbing engineering design, documentation, and engineering management'),
-      mkT('t-env',    'ENV',    'Environmental',            'Environmental impact management, contamination assessment, regulatory compliance, and reporting'),
-      mkT('t-sust',   'SUST',   'Sustainability / LEED',    'Sustainable design consulting, energy modelling, Green Star or LEED certification, and reporting'),
-      mkT('t-fac',    'FAC',    'Facilities / Operations',  'Facilities management handover, O&M manual preparation, and operational readiness planning'),
+      mkT('t-bim',    'BIM',    'BIM / VDC'),
+      mkT('t-arch',   'ARCH',   'Design / Architecture'),
+      mkT('t-seng',   'SENG',   'Structural Engineering'),
+      mkT('t-mepeng', 'MEPENG', 'MEP Engineering'),
+      mkT('t-env',    'ENV',    'Environmental'),
+      mkT('t-sust',   'SUST',   'Sustainability / LEED'),
+      mkT('t-fac',    'FAC',    'Facilities / Operations'),
     ],
   },
 ];
@@ -281,6 +281,7 @@ const COL_DRAG       = 28;
 const COL_NAME       = 480;
 const COL_CODE       = 120;
 const COL_TYPE       = 110;
+const COL_NOTE       = 220;
 const COL_ACTIONS    = 44;
 const HEADER_H       = 44;
 const ROW_H          = 48;
@@ -1204,6 +1205,8 @@ export function DisciplineTable() {
                   label="Trade Code"
                   sortKey="tradeCode" sortState={sortState} onSort={() => handleSort('tradeCode')}
                   style={{ width: 180, flexShrink: 0 }} editMode={false} />
+                <DtHeaderCell label="Note" sortKey={null} sortState={sortState} onSort={() => {}}
+                  style={{ flex: 1, minWidth: COL_NOTE }} editMode={false} />
               </>
             ) : (
               <>
@@ -1222,6 +1225,12 @@ export function DisciplineTable() {
                 {/* Type column */}
                 <DtHeaderCell label="Type" sortKey={null} sortState={sortState} onSort={() => {}}
                   style={{ width: COL_TYPE, flexShrink: 0 }} align="center" editMode={editMode} />
+
+                {/* Note column — view mode only */}
+                {!editMode && (
+                  <DtHeaderCell label="Note" sortKey={null} sortState={sortState} onSort={() => {}}
+                    style={{ flex: 1, minWidth: COL_NOTE }} editMode={false} />
+                )}
 
                 {/* Actions (edit only) — no label, sticky-right */}
                 {editMode && (
@@ -1286,6 +1295,13 @@ export function DisciplineTable() {
                       {highlightText(c.code, search)}
                     </span>
                   </div>
+
+                  {/* Note */}
+                  <div style={{ flex: 1, minWidth: COL_NOTE, display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 8, overflow: 'hidden' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#8C8C8C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.description ?? ''}
+                    </span>
+                  </div>
                 </div>
               );
             });
@@ -1331,6 +1347,12 @@ export function DisciplineTable() {
                   <div style={{ width: COL_TYPE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <TypePill type="Discipline" />
                   </div>
+                  {/* Note */}
+                  <div style={{ flex: 1, minWidth: COL_NOTE, display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 8, overflow: 'hidden' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#8C8C8C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {group.description ?? ''}
+                    </span>
+                  </div>
                 </div>
 
                 {/* ── Trade child rows ── */}
@@ -1356,6 +1378,12 @@ export function DisciplineTable() {
                       {/* Type */}
                       <div style={{ width: COL_TYPE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <TypePill type="Trade" />
+                      </div>
+                      {/* Note */}
+                      <div style={{ flex: 1, minWidth: COL_NOTE, display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 8, overflow: 'hidden' }}>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#8C8C8C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {trade.description ?? ''}
+                        </span>
                       </div>
                     </div>
                   );
