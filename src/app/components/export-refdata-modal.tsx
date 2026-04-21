@@ -48,12 +48,12 @@ function makeTimestamp() {
   );
 }
 
-function flattenItems(items: RefDataItem[], parentCode = ''): string[][] {
+function flattenItems(items: RefDataItem[], level = 1): string[][] {
   const rows: string[][] = [];
   for (const item of items) {
-    rows.push([parentCode, item.code, item.name, item.description ?? '']);
+    rows.push([item.code, item.name, String(level), item.description ?? '']);
     if (item.children?.length) {
-      rows.push(...flattenItems(item.children, item.code));
+      rows.push(...flattenItems(item.children, level + 1));
     }
   }
   return rows;
