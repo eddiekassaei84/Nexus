@@ -517,7 +517,7 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
             <div style={{ width: C_TYPE, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>
               Type
             </div>
-            <div style={{ width: C_ACT, flexShrink: 0, background: '#FAFAFA' }} />
+            <div style={{ width: C_ACT, flexShrink: 0, background: '#FAFAFA', position: 'sticky', right: 0, zIndex: 21 }} />
           </div>
 
           {editGroups.map(g => {
@@ -553,8 +553,8 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
                     <TypePill label={groupLabel} bg={groupPillBg} color={groupPillColor} />
                   </div>
 
-                  {/* Trash — directly after Type, no spacer */}
-                  <div style={{ width: C_ACT, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* Trash — sticky-right */}
+                  <div style={{ width: C_ACT, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'sticky', right: 0, zIndex: 4, background: 'inherit' }}>
                     <IconBtn title={`Delete ${groupLabel}`} onClick={() => deleteGroup(g.id)} hoverBg="#FFF1F0"><TrashIcon /></IconBtn>
                   </div>
                 </div>
@@ -591,8 +591,8 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
                           <TypePill label={itemLabel} bg={itemPillBg} color={itemPillColor} />
                         </div>
 
-                        {/* Trash — directly after Type, no spacer */}
-                        <div style={{ width: C_ACT, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* Trash — sticky-right */}
+                        <div style={{ width: C_ACT, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'sticky', right: 0, zIndex: 4, background: 'inherit' }}>
                           <IconBtn title={`Delete ${itemLabel}`} onClick={() => deleteItem(g.id, c.id)} hoverBg="#FFF1F0"><TrashIcon /></IconBtn>
                         </div>
                       </div>

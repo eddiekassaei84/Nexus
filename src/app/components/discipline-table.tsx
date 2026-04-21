@@ -1069,8 +1069,8 @@ export function DisciplineTable() {
     return (
       <span style={{
         display: 'inline-flex', alignItems: 'center',
-        background: isDisc ? '#FFEDE4' : '#F0F2F5',
-        color: isDisc ? '#D4380D' : '#616D79',
+        background: isDisc ? '#EFF8FF' : '#F0F2F5',
+        color: isDisc ? '#175CD3' : '#616D79',
         borderRadius: 4,
         padding: '2px 8px',
         fontFamily: 'Open Sans, sans-serif',
@@ -1329,10 +1329,6 @@ export function DisciplineTable() {
                     </button>
                     <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, lineHeight: '20px', color: groupActive ? '#1D2C38' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {highlightText(group.name, search)}
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#E5E7E9', borderRadius: 9999, padding: '1px 8px', flexShrink: 0, fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 500, color: '#616D79', whiteSpace: 'nowrap', lineHeight: '16px' }}>
-                      <span style={{ fontWeight: 600 }}>{matchedChildren.length}</span>
-                      <span>Trades</span>
                     </span>
                   </div>
 

@@ -1396,7 +1396,7 @@ function MainContent({
               Phases
             </h1>
           </div>
-          <div className="flex-1 flex min-h-0 min-w-0" style={{ padding: '0 12px 12px 12px', overflow: 'hidden' }}>
+          <div className="flex-1 flex min-h-0 min-w-0 p-[12px]" style={{ overflow: 'hidden' }}>
             <PhasesPage />
           </div>
         </div>
