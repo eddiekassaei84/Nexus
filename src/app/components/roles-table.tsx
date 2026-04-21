@@ -1638,17 +1638,6 @@ export function RolesTable() {
                     <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, lineHeight: '20px', color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {highlightText(tradeGroup.tradeName, search)}
                     </span>
-                    {/* Count pill after the name */}
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      background: '#D9D9D9', borderRadius: 9999,
-                      padding: '1px 8px', flexShrink: 0,
-                      fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 500,
-                      color: '#595959', whiteSpace: 'nowrap', lineHeight: '16px', gap: 3,
-                    }}>
-                      <span style={{ fontWeight: 600 }}>{tradeGroup.roles.length}</span>
-                      <span>Roles</span>
-                    </span>
                   </div>
                   {/* Trade Code pill */}
                   <div style={{ width: colWidths.code, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
@@ -1783,17 +1772,6 @@ export function RolesTable() {
                     {/* Trade name first */}
                     <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, lineHeight: '20px', color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {tradeGroup.tradeName}
-                    </span>
-                    {/* Count pill after the name */}
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      background: '#D9D9D9', borderRadius: 9999,
-                      padding: '1px 8px', flexShrink: 0,
-                      fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 500,
-                      color: '#595959', whiteSpace: 'nowrap', lineHeight: '16px', gap: 3,
-                    }}>
-                      <span style={{ fontWeight: 600 }}>{tradeGroup.roles.length}</span>
-                      <span>Roles</span>
                     </span>
                   </div>
 
