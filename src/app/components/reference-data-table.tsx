@@ -142,58 +142,58 @@ function findDropTarget(x: number, y: number, dragId: string): DropTarget | null
 }
 
 // ─── Seed data ─────────────────────────────────────────────────────────────────
-function mk(id: string, code: string, name: string, description: string, children: RefItem[] = []): RefItem {
+function mk(id: string, code: string, name: string, description = '', children: RefItem[] = []): RefItem {
   return { id, code, name, description, children };
 }
 
 // ─── Phase seed data ───────────────────────────────────────────────────────────
 export const PHASE_ITEMS: RefItem[] = [
-  mk('ph-pl', 'PL', 'Planning', 'Early-stage project initiation, feasibility assessment, and programme definition activities that establish viability and set the project direction.', [
-    mk('ph-pl-feas', 'PL-FEAS', 'Feasibility',      'Assessment of project viability covering site suitability, regulatory constraints, environmental factors, and high-level cost/benefit analysis.'),
-    mk('ph-pl-conc', 'PL-CONC', 'Concept Planning', 'Development of the initial project concept, massing studies, and preliminary programme to establish design direction and stakeholder alignment.'),
-    mk('ph-pl-prog', 'PL-PROG', 'Programming',      'Detailed space-planning and functional-requirements programme defining scope, adjacencies, area targets, and performance criteria for the design team.'),
-    mk('ph-pl-budg', 'PL-BUDG', 'Budgeting',        'Order-of-magnitude and detailed cost estimation, funding identification, cash-flow projections, and financial feasibility confirmation.'),
+  mk('ph-pl', 'PL', 'Planning', '', [
+    mk('ph-pl-feas', 'PL-FEAS', 'Feasibility'),
+    mk('ph-pl-conc', 'PL-CONC', 'Concept Planning'),
+    mk('ph-pl-prog', 'PL-PROG', 'Programming'),
+    mk('ph-pl-budg', 'PL-BUDG', 'Budgeting'),
   ]),
-  mk('ph-ds', 'DS', 'Design', 'Progressive architectural and engineering design across all disciplines, culminating in permit-ready and construction-ready documentation.', [
-    mk('ph-ds-sd',  'DS-SD',  'Schematic Design (SD)',         'Initial design exploration establishing overall building form, structural strategy, MEP concepts, material palette, and gross-area verification.'),
-    mk('ph-ds-dd',  'DS-DD',  'Design Development (DD)',        'Refinement of all design disciplines with coordinated drawings, outline specifications, updated cost plan, and resolution of major technical issues.'),
-    mk('ph-ds-cd',  'DS-CD',  'Construction Documents (CD)',    'Complete, fully coordinated contract documents — drawings, specifications, and schedules — ready for competitive bidding and construction.'),
-    mk('ph-ds-ifp', 'DS-IFP', 'Issued for Permit',             'Submission package to authorities having jurisdiction (AHJ) for building permit review, code compliance assessment, and formal approval.'),
-    mk('ph-ds-ifc', 'DS-IFC', 'Issued for Construction (IFC)', 'Final approved and stamped documents released to the contractor as the authoritative construction reference set for the entire project.'),
+  mk('ph-ds', 'DS', 'Design', '', [
+    mk('ph-ds-sd',  'DS-SD',  'Schematic Design (SD)'),
+    mk('ph-ds-dd',  'DS-DD',  'Design Development (DD)'),
+    mk('ph-ds-cd',  'DS-CD',  'Construction Documents (CD)'),
+    mk('ph-ds-ifp', 'DS-IFP', 'Issued for Permit'),
+    mk('ph-ds-ifc', 'DS-IFC', 'Issued for Construction (IFC)'),
   ]),
-  mk('ph-pc', 'PC', 'Procurement', 'Contractor and subcontractor selection, competitive bidding, and contract award activities to establish the delivery team.', [
-    mk('ph-pc-preq', 'PC-PREQ', 'Prequalification',    'Evaluation of contractor and subcontractor technical capacity, financial standing, safety record, bonding capability, and relevant project experience.'),
-    mk('ph-pc-bid',  'PC-BID',  'Bidding / Tendering', 'Issue of tender documents, pre-bid site walks, addenda management, bidder queries, and receipt of competitive pricing submissions.'),
-    mk('ph-pc-eval', 'PC-EVAL', 'Bid Evaluation',      'Quantitative and qualitative analysis of received bids, including scope levelling, clarification interviews, and value-engineering opportunity review.'),
-    mk('ph-pc-awd',  'PC-AWD',  'Award',               'Finalisation of contract negotiations, execution of contract agreements, bond issuance, insurance confirmation, and formal notice to proceed.'),
+  mk('ph-pc', 'PC', 'Procurement', '', [
+    mk('ph-pc-preq', 'PC-PREQ', 'Prequalification'),
+    mk('ph-pc-bid',  'PC-BID',  'Bidding / Tendering'),
+    mk('ph-pc-eval', 'PC-EVAL', 'Bid Evaluation'),
+    mk('ph-pc-awd',  'PC-AWD',  'Award'),
   ]),
-  mk('ph-cn', 'CN', 'Construction', 'Physical on-site construction from mobilization through to practical completion of all structural, envelope, services, and finishing elements.', [
-    mk('ph-cn-mob',  'CN-MOB',  'Mobilization',      'Contractor site establishment including hoardings, site offices, laydown areas, plant logistics, safety induction systems, and subcontractor coordination.'),
-    mk('ph-cn-site', 'CN-SITE', 'Site Preparation',  'Clearing, demolition of existing structures, bulk earthworks, temporary drainage, erosion control, and enabling works for construction access.'),
-    mk('ph-cn-fdn',  'CN-FDN',  'Foundations',       'Excavation, piling, caissons, footings, grade beams, slab-on-grade, and below-slab waterproofing, drainage, and insulation.'),
-    mk('ph-cn-str',  'CN-STR',  'Structure',         'Erection of the primary structural frame — concrete, steel, or hybrid — including slabs, columns, beams, cores, and shear walls to each floor level.'),
-    mk('ph-cn-env',  'CN-ENV',  'Envelope',          'Installation of the building envelope including facade cladding, roofing membranes, curtain wall systems, windows, and external doors.'),
-    mk('ph-cn-mep',  'CN-MEP',  'MEP Rough-In',      'First-fix installation of mechanical, electrical, and plumbing services within walls, floors, and ceiling voids before application of finishes.'),
-    mk('ph-cn-int',  'CN-INT',  'Interior Fit-Out',  'Internal partitioning, drywall, joinery, ceilings, second-fix services, specialised systems, and architectural fit-out to all occupied spaces.'),
-    mk('ph-cn-fin',  'CN-FIN',  'Finishes',          'Application of all final surface finishes including painting, flooring systems, ceiling tiles, wall cladding, external paving, and landscaping.'),
+  mk('ph-cn', 'CN', 'Construction', '', [
+    mk('ph-cn-mob',  'CN-MOB',  'Mobilization'),
+    mk('ph-cn-site', 'CN-SITE', 'Site Preparation'),
+    mk('ph-cn-fdn',  'CN-FDN',  'Foundations'),
+    mk('ph-cn-str',  'CN-STR',  'Structure'),
+    mk('ph-cn-env',  'CN-ENV',  'Envelope'),
+    mk('ph-cn-mep',  'CN-MEP',  'MEP Rough-In'),
+    mk('ph-cn-int',  'CN-INT',  'Interior Fit-Out'),
+    mk('ph-cn-fin',  'CN-FIN',  'Finishes'),
   ]),
-  mk('ph-cx', 'CX', 'Commissioning', 'Systematic verification that all installed building systems perform in accordance with design intent, specifications, and owner project requirements.', [
-    mk('ph-cx-test', 'CX-TEST', 'System Testing',       'Individual equipment and system performance testing against manufacturer specifications, contract performance criteria, and design parameters.'),
-    mk('ph-cx-strt', 'CX-STRT', 'Start-Up',            'Initial energisation and controlled start-up of all active building systems under specialist oversight, with deficiencies logged and rectified.'),
-    mk('ph-cx-bal',  'CX-BAL',  'Balancing',           'Air and hydronic balancing of HVAC systems to achieve designed airflow rates, temperature distribution, pressure differentials, and noise levels.'),
-    mk('ph-cx-fcx',  'CX-FCX',  'Final Commissioning', 'Integrated systems functional performance testing, seasonal commissioning activities, and production of the commissioning report for owner acceptance.'),
+  mk('ph-cx', 'CX', 'Commissioning', '', [
+    mk('ph-cx-test', 'CX-TEST', 'System Testing'),
+    mk('ph-cx-strt', 'CX-STRT', 'Start-Up'),
+    mk('ph-cx-bal',  'CX-BAL',  'Balancing'),
+    mk('ph-cx-fcx',  'CX-FCX',  'Final Commissioning'),
   ]),
-  mk('ph-ho', 'HO', 'Handover', 'Project close-out, regulatory acceptance, documentation delivery, and formal transfer of the completed facility to the owner or operator.', [
-    mk('ph-ho-pnch', 'HO-PNCH', 'Punch / Closeout',       'Systematic identification, logging, and rectification of all outstanding defects, incomplete works, and non-conformances prior to practical completion.'),
-    mk('ph-ho-insp', 'HO-INSP', 'Final Inspections',      'Authority inspections, occupation certificate applications, fire authority clearances, and all third-party sign-offs required for lawful occupation.'),
-    mk('ph-ho-asbt', 'HO-ASBT', 'As-Built Documentation', 'Compilation and formal delivery of as-built drawings, O&M manuals, warranties, certifications, attic stock schedules, and long-term maintenance schedules.'),
-    mk('ph-ho-trn',  'HO-TRN',  'Owner Training',         'Structured training sessions for owner and facilities management staff covering all installed building systems, controls, and emergency procedures.'),
-    mk('ph-ho-turn', 'HO-TURN', 'Turnover',               'Formal handover of keys, access credentials, spare parts, and operational control of the completed facility to the owner or designated operator.'),
+  mk('ph-ho', 'HO', 'Handover', '', [
+    mk('ph-ho-pnch', 'HO-PNCH', 'Punch / Closeout'),
+    mk('ph-ho-insp', 'HO-INSP', 'Final Inspections'),
+    mk('ph-ho-asbt', 'HO-ASBT', 'As-Built Documentation'),
+    mk('ph-ho-trn',  'HO-TRN',  'Owner Training'),
+    mk('ph-ho-turn', 'HO-TURN', 'Turnover'),
   ]),
-  mk('ph-op', 'OP', 'Operations', 'Post-handover activities covering defects liability period, planned and reactive maintenance programs, and ongoing asset management.', [
-    mk('ph-op-warr', 'OP-WARR', 'Warranty Period',  'Defects liability period during which the contractor remains responsible for rectifying construction defects and latent deficiencies at no cost to the owner.'),
-    mk('ph-op-mant', 'OP-MANT', 'Maintenance',      'Planned preventive and reactive maintenance programs to sustain building performance, asset life expectancy, occupant comfort, and regulatory compliance.'),
-    mk('ph-op-asop', 'OP-ASOP', 'Asset Operations', 'Day-to-day facility management, energy monitoring and optimisation, compliance reporting, and long-term capital expenditure planning.'),
+  mk('ph-op', 'OP', 'Operations', '', [
+    mk('ph-op-warr', 'OP-WARR', 'Warranty Period'),
+    mk('ph-op-mant', 'OP-MANT', 'Maintenance'),
+    mk('ph-op-asop', 'OP-ASOP', 'Asset Operations'),
   ]),
 ];
 
