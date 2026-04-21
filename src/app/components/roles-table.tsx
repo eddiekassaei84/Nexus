@@ -1509,12 +1509,12 @@ export function RolesTable() {
             <>
               <RestoreDefaultButton onClick={() => setShowRestoreConfirm(true)} />
               <CancelButton onClick={cancelEdit} />
+              <SecondaryButton onClick={() => setImportOpen(true)}><ImportIcon /><span>Import</span></SecondaryButton>
               <SaveButton onClick={saveEdit} />
             </>
           ) : (
             <>
               <button onClick={downloadRolesTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>Download Import Template</button>
-              <SecondaryButton onClick={() => setImportOpen(true)}><ImportIcon /><span>Import</span></SecondaryButton>
               <SecondaryButton onClick={() => setExportOpen(true)}><ExportIcon /><span>Export</span></SecondaryButton>
               <PrimaryEditButton onClick={enterEditMode} />
             </>
@@ -1982,9 +1982,12 @@ function PrimaryEditButton({ onClick }: { onClick: () => void }) {
 }
 function CancelButton({ onClick }: { onClick: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
   return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 16, paddingRight: 16, background: hovered ? '#E5E7E9' : '#F2F3F4', border: `1px solid ${hovered ? '#616D79' : '#C3C7CC'}`, borderRadius: 4, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#616D79', whiteSpace: 'nowrap', transition: 'background 0.15s, border-color 0.15s' }}>
+    <button onClick={onClick}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)} onMouseUp={() => setPressed(false)}
+      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 12, paddingRight: 12, background: pressed ? '#616D79' : hovered ? '#E5E7E9' : 'transparent', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: pressed ? '#FFFFFF' : '#616D79', whiteSpace: 'nowrap', transition: 'background 0.15s, color 0.15s' }}>
       Cancel
     </button>
   );
@@ -2004,41 +2007,17 @@ function SaveButton({ onClick, disabled }: { onClick: () => void; disabled?: boo
   );
 }
 
-// ─── Restore to Default — Tertiary button (§15.3) ─────────────────────────────
+// ─── Restore to Default — link style ──────────────────────────────────────────
 function RestoreDefaultButton({ onClick }: { onClick: () => void }) {
-  const [hovered,  setHovered]  = useState(false);
-  const [pressed,  setPressed]  = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      style={{
-        height: 36,
-        display: 'flex', alignItems: 'center', gap: 4,
-        paddingLeft: 16, paddingRight: 16,
-        background: pressed ? '#616D79' : hovered ? '#E5E7E9' : 'transparent',
-        border: 'none',
-        borderRadius: 4,
-        cursor: 'pointer',
-        fontFamily: 'Inter, sans-serif',
-        fontSize: 14,
-        fontWeight: 400,
-        lineHeight: '20px',
-        color: pressed ? '#FFFFFF' : '#616D79',
-        whiteSpace: 'nowrap',
-        transition: 'background 0.15s, color 0.15s',
-        flexShrink: 0,
-      }}
+      onMouseLeave={() => setHovered(false)}
+      style={{ background: 'none', border: 'none', padding: '0 4px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#616D79', textDecoration: hovered ? 'underline' : 'none', whiteSpace: 'nowrap', transition: 'text-decoration 0.15s', flexShrink: 0 }}
     >
-      {/* Rotate-left / restore icon */}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-        <path d="M2.5 4.5A6 6 0 1 1 2 8" stroke={pressed ? '#FFFFFF' : '#616D79'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.15s' }} />
-        <path d="M2.5 1.5v3h3" stroke={pressed ? '#FFFFFF' : '#616D79'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.15s' }} />
-      </svg>
-      Restore to default
+      Restore Defaults
     </button>
   );
 }
