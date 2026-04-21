@@ -332,11 +332,10 @@ const TEMPLATE_CSV = [
 ].join('\n');
 
 export function downloadRolesTemplate() {
-  const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'roles_import_template.csv'; a.click();
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a');
+  a.href = '/sample-imports/Roles_Import_Sample.xlsx';
+  a.download = 'Roles_Import_Sample.xlsx';
+  a.click();
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
