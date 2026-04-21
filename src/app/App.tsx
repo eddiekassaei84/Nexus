@@ -14,6 +14,7 @@ import { imgShutterstock6856549541 } from '../imports/svg-jizvb';
 import { UsersTable } from './components/users-table';
 import { RolesTable } from './components/roles-table';
 import { DisciplineTable } from './components/discipline-table';
+import { PhasesPage } from './components/phases-page';
 import { ReferenceDataTable } from './components/reference-data-table';
 import { RoleAccessLevel } from './components/role-access-level';
 import { InspectionsList } from './components/inspections-list';
@@ -895,6 +896,7 @@ const NavIco: Record<string, (c: string) => React.ReactNode> = {
   workflows:     (c) => <svg width="24" height="24" viewBox="0 0 28.6665 28.6667" fill="none"><path d="M6.33314 5.66667C6.33314 4.42 6.33314 3.79733 6.60114 3.33333C6.77667 3.02932 7.02913 2.77686 7.33314 2.60133C7.79714 2.33333 8.41981 2.33333 9.66648 2.33333H13.6665C14.9131 2.33333 15.5358 2.33333 15.9998 2.60133C16.3038 2.77686 16.5563 3.02932 16.7318 3.33333C16.9998 3.79733 16.9998 4.42 16.9998 5.66667C16.9998 6.91333 16.9998 7.536 16.7318 8C16.5563 8.30401 16.3038 8.55647 15.9998 8.732C15.5358 9 14.9131 9 13.6665 9H9.66648C8.41981 9 7.79714 9 7.33314 8.732C7.02913 8.55647 6.77667 8.30401 6.60114 8C6.33314 7.536 6.33314 6.91333 6.33314 5.66667ZM6.33314 19C6.33314 17.7533 6.33314 17.1307 6.60114 16.6667C6.77667 16.3627 7.02913 16.1102 7.33314 15.9347C7.79714 15.6667 8.41981 15.6667 9.66648 15.6667H13.6665C14.9131 15.6667 15.5358 15.6667 15.9998 15.9347C16.3038 16.1102 16.5563 16.3627 16.7318 16.6667C16.9998 17.1307 16.9998 17.7533 16.9998 19C16.9998 20.2467 16.9998 20.8693 16.7318 21.3333C16.5563 21.6373 16.3038 21.8898 15.9998 22.0653C15.5358 22.3333 14.9131 22.3333 13.6665 22.3333H9.66648C8.41981 22.3333 7.79714 22.3333 7.33314 22.0653C7.02913 21.8898 6.77667 21.6373 6.60114 21.3333C6.33314 20.8693 6.33314 20.2467 6.33314 19ZM26.1198 21.1867C27.1505 20.156 27.6665 19.64 27.6665 19C27.6665 18.36 27.1505 17.844 26.1198 16.8133L25.8531 16.5467C24.8225 15.516 24.3065 15 23.6665 15C23.0265 15 22.5105 15.516 21.4798 16.5467L21.2131 16.8133C20.1825 17.844 19.6665 18.36 19.6665 19C19.6665 19.64 20.1825 20.156 21.2131 21.1867L21.4798 21.4533C22.5105 22.484 23.0265 23 23.6665 23C24.3065 23 24.8225 22.484 25.8531 21.4533L26.1198 21.1867Z" stroke={c} strokeWidth="2"/><path d="M6.34114 5.66667H1.01048M1.01048 5.66667V1M1.01048 5.66667V14.3333C1.01048 15.8053 0.809142 17.624 2.19448 18.5507C2.86648 19 3.80248 19 5.67448 19M17.0025 19H19.6691M23.6665 15V11C23.6665 8.48533 23.6665 7.22933 22.8865 6.448C22.1051 5.66667 20.8491 5.66667 18.3358 5.66667H17.0025M27.6665 27.6667C26.4238 27.6667 25.8025 27.6667 25.3131 27.4933C24.6598 27.26 24.1398 26.816 23.8691 26.256C23.6665 25.836 23.6665 25.3027 23.6665 24.2387V23.6667" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   roles:         (c) => <svg width="24" height="24" viewBox="0 0 26.8926 24.6667" fill="none"><path d="M17 7.66667C17 5.89856 16.2976 4.20286 15.0474 2.95262C13.7971 1.70238 12.1014 1 10.3333 1C8.56522 1 6.86953 1.70238 5.61929 2.95262C4.36905 4.20286 3.66667 5.89856 3.66667 7.66667C3.66667 9.43478 4.36905 11.1305 5.61929 12.3807C6.86953 13.631 8.56522 14.3333 10.3333 14.3333C12.1014 14.3333 13.7971 13.631 15.0474 12.3807C16.2976 11.1305 17 9.43478 17 7.66667Z" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19.6667 23.6667C19.6667 22.441 19.4253 21.2273 18.9562 20.095C18.4872 18.9626 17.7997 17.9337 16.933 17.067C16.0663 16.2003 15.0374 15.5128 13.905 15.0438C12.7727 14.5747 11.559 14.3333 10.3333 14.3333C9.10766 14.3333 7.89399 14.5747 6.76162 15.0438C5.62925 15.5128 4.60035 16.2003 3.73367 17.067C2.86699 17.9337 2.1795 18.9626 1.71046 20.095C1.24141 21.2273 1 22.441 1 23.6667" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M25.8926 14.334C25.8926 14.334 20.6367 10.463 20.6367 9.07812C20.6367 7.69321 25.8926 3.82227 25.8926 3.82227" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   discTrade:     (c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="8" height="8" rx="1.5" stroke={c} strokeWidth="1.6"/><rect x="14" y="3" width="8" height="8" rx="1.5" stroke={c} strokeWidth="1.6"/><rect x="2" y="14" width="8" height="8" rx="1.5" stroke={c} strokeWidth="1.6"/><path d="M14 18h8M18 14v8" stroke={c} strokeWidth="1.6" strokeLinecap="round"/><path d="M10 7h4M12 5v4" stroke={c} strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  phases:        (c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="2" stroke={c} strokeWidth="1.5"/><circle cx="12" cy="12" r="2" stroke={c} strokeWidth="1.5"/><circle cx="19" cy="12" r="2" stroke={c} strokeWidth="1.5"/><path d="M7 12h3M14 12h3" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><path d="M5 7v3M12 7v3M19 7v3M5 14v3M12 14v3" stroke={c} strokeWidth="1.3" strokeLinecap="round"/><path d="M3 5h4M10 5h4M17 5h4" stroke={c} strokeWidth="1.3" strokeLinecap="round"/></svg>,
   roleAccess:    (c) => <svg width="24" height="24" viewBox="0 0 27.328 26" fill="none"><path d="M19.3133 17.8987V16.0027C19.3133 15.3829 19.5595 14.7886 19.9977 14.3504C20.4359 13.9122 21.0303 13.666 21.65 13.666C22.2697 13.666 22.8641 13.9122 23.3023 14.3504C23.7405 14.7886 23.9867 15.3829 23.9867 16.0027V17.8987M17 7.66667C17 5.89856 16.2976 4.20286 15.0474 2.95262C13.7971 1.70238 12.1014 1 10.3333 1C8.56522 1 6.86953 1.70238 5.61929 2.95262C4.36905 4.20286 3.66667 5.89856 3.66667 7.66667C3.66667 9.43478 4.36905 11.1305 5.61929 12.3807C6.86953 13.631 8.56522 14.3333 10.3333 14.3333C12.1014 14.3333 13.7971 13.631 15.0474 12.3807C16.2976 11.1305 17 9.43478 17 7.66667ZM19.4067 25H23.9213C25.2507 25 26.328 23.924 26.328 22.5973V20.592C26.328 19.2653 25.2507 18.1907 23.9213 18.1907H19.4067C18.0773 18.1907 17 19.2653 17 20.592V22.5973C17 23.924 18.0773 25 19.4067 25Z" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 23.6667C0.999893 21.9612 1.46706 20.2884 2.35076 18.8298C3.23446 17.3712 4.50092 16.1826 6.01258 15.3931C7.52425 14.6036 9.22333 14.2434 10.9253 14.3515C12.6273 14.4597 14.2671 15.0321 15.6667 16.0067" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   inspTpl:       (c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" fill={c === '#FF4D00' ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.1)'} stroke={c} strokeWidth="1.5"/><circle cx="15" cy="9" r="3" stroke={c} strokeWidth="1.3"/><path d="M17.2 11.2L20 14" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><path d="M7 15h5M7 18h3" stroke={c} strokeWidth="1.3" strokeLinecap="round"/></svg>,
   checkTpl:      (c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" fill={c === '#FF4D00' ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.1)'} stroke={c} strokeWidth="1.5"/><path d="M8 8l1.5 1.5L13 6" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 13l1.5 1.5L13 11" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 18h6" stroke={c} strokeWidth="1.4" strokeLinecap="round"/></svg>,
@@ -908,6 +910,7 @@ const PROJECT_SETTINGS_NAV: NavItem[] = [
   { id: 'teams',             label: 'Teams',                       icon: NavIco.teams },
   { id: 'locations',         label: 'Location Breakdown Structure', icon: NavIco.locations },
   { id: 'discipline-trade',  label: 'Discipline & Trade',          icon: NavIco.discTrade },
+  { id: 'phases',            label: 'Phases',                      icon: NavIco.phases },
   { id: 'reference-data',    label: 'Reference Data',              icon: NavIco.refdata },
   { id: 'work-packages',     label: 'Classification Crosswalk',    icon: NavIco.workPackages },
   { id: 'notifications',     label: 'Notifications',               icon: NavIco.notifications },
@@ -1239,6 +1242,7 @@ const MODULE_TITLES: Record<string, string> = {
   'teams':             'Teams',
   'locations':         'Location Breakdown Structure',
   'reference-data':    'Reference Data',
+  'phases':            'Phases',
   'work-packages':     'Classification Crosswalk',
   'notifications':     'Notifications',
   'workflows':         'Workflows',
@@ -1375,6 +1379,25 @@ function MainContent({
           </div>
           <div className="flex-1 flex min-h-0 p-[12px]">
             <DisciplineTable />
+          </div>
+        </div>
+      );
+    }
+
+    // ── Phases sub-page ──
+    if (currentView === 'project-settings' && activeNav === 'phases') {
+      return (
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-white">
+          <div
+            className="bg-white shrink-0 flex items-center border-b border-[#d9d9d9]"
+            style={{ height: 72, paddingLeft: 24, paddingRight: 24 }}
+          >
+            <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 24, fontWeight: 600, lineHeight: '32px', letterSpacing: 0, color: '#1D2C38', margin: 0 }}>
+              Phases
+            </h1>
+          </div>
+          <div className="flex-1 flex min-h-0 min-w-0" style={{ padding: '0 12px 12px 12px', overflow: 'hidden' }}>
+            <PhasesPage />
           </div>
         </div>
       );

@@ -7860,7 +7860,6 @@ const UNIFORMAT_ITEMS: RefItem[] = [
 const SYSTEMS_ITEMS = UNIFORMAT_ITEMS;
 
 const INITIAL_TABS: RefTab[] = [
-  { id: 'phases',        label: 'Phases',        items: PHASE_ITEMS,    builtIn: true, structureType: 'flat'      as StructureType },
   { id: 'work-packages', label: 'WBS Code',       items: WORK_PKG_ITEMS, builtIn: true, structureType: 'hierarchy' as StructureType },
   { id: 'assembly',      label: 'Master Format',  items: ASSEMBLY_ITEMS, builtIn: true, structureType: 'hierarchy' as StructureType },
   { id: 'systems',       label: 'Uni Format',     items: SYSTEMS_ITEMS,  builtIn: true, structureType: 'hierarchy' as StructureType },
