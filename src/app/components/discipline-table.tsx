@@ -44,7 +44,7 @@ function mkT(id: string, code: string, name: string): TradeEntry {
 
 export const DISCIPLINE_DATA: DisciplineGroup[] = [
   {
-    id: 'civil-site', name: 'Civil & Site Works', code: 'CIVIL',
+    id: 'civil-site', name: 'Civil & Site Works', code: 'CVL',
     description: '',
     active: true,
     children: [
@@ -104,7 +104,7 @@ export const DISCIPLINE_DATA: DisciplineGroup[] = [
     ],
   },
   {
-    id: 'mechanical', name: 'Mechanical & HVAC', code: 'MECH',
+    id: 'mechanical', name: 'Mechanical & HVAC', code: 'MECH-HVAC',
     description: '',
     active: true,
     children: [
@@ -116,7 +116,7 @@ export const DISCIPLINE_DATA: DisciplineGroup[] = [
     ],
   },
   {
-    id: 'electrical', name: 'Electrical', code: 'ELEC',
+    id: 'electrical', name: 'Electrical', code: 'ELECT',
     description: '',
     active: true,
     children: [

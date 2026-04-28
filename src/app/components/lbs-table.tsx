@@ -410,42 +410,64 @@ function propagateElevations(items: LBSItem[], ancestorLevelElev: string | null 
   });
 }
 
-function validateItems(items: LBSItem[], errors = new Map<string, string>()): Map<string, string> {
-  // ── Per-item checks ────────────────────────────────────────────────────────
-  for (const item of items) {
-    if (!item.name.trim()) errors.set(`${item.id}_name`, 'Name is required');
-    // Location Code is not mandatory — no validation needed
-    // Elevation must be a valid ft-in value (written by ElevationInput on blur)
-    if (isLevelType(item.type) && item.elevation.trim() !== '' && isNaN(parseFtIn(item.elevation.trim()))) {
-      errors.set(`${item.id}_elevation`, 'Elevation must be a number in feet (e.g. 14 or −14.25)');
-    }
-    validateItems(item.children, errors);
+function validateItems(items: LBSItem[], errors = new Map<string, string>(), sep = '.'): Map<string, string> {
+  const fullCodeOwners = new Map<string, { id: string; fullCode: string }[]>();
+
+  function recordFullCode(item: LBSItem, fullCode: string) {
+    const key = fullCode.trim().toLowerCase();
+    if (!key) return;
+    fullCodeOwners.set(key, [...(fullCodeOwners.get(key) ?? []), { id: item.id, fullCode }]);
   }
 
-  // ── Sibling Level ordering ─────────────────────────────────────────────────
-  // Among Level-typed siblings (in list order), each elevation must be >= the
-  // previous Level's elevation. Items with empty or invalid elevations are
-  // skipped and reset the chain so a single bad row doesn't cascade errors.
-  let prevInches: number | null = null;
-  let prevElevLabel = '';
-  for (const item of items) {
-    if (!isLevelType(item.type)) continue;
-    const raw    = item.elevation.trim();
-    if (raw === '')      { prevInches = null; prevElevLabel = ''; continue; } // empty → reset chain
-    const inches = parseFtIn(raw);
-    if (isNaN(inches))  { prevInches = null; prevElevLabel = ''; continue; } // invalid format → reset chain
-    if (prevInches !== null && inches < prevInches) {
-      // Only add the ordering error if no format error already exists
-      if (!errors.has(`${item.id}_elevation`)) {
-        const prevFt = parseFloat((prevInches / 12).toFixed(6)).toString();
-        errors.set(`${item.id}_elevation`, `Elevation cannot be less than the previous Level (${prevFt} ft = ${prevElevLabel})`);
+  function walk(nodes: LBSItem[], prefix: string) {
+    // ── Per-item checks ──────────────────────────────────────────────────────
+    for (const item of nodes) {
+      const fullCode = prefix ? `${prefix}${sep}${item.code}` : item.code;
+      recordFullCode(item, fullCode);
+
+      if (!item.name.trim()) errors.set(`${item.id}_name`, 'Name is required');
+      // Location Code can repeat across different branches, but generated Full Code must remain unique.
+      // Elevation must be a valid ft-in value (written by ElevationInput on blur)
+      if (isLevelType(item.type) && item.elevation.trim() !== '' && isNaN(parseFtIn(item.elevation.trim()))) {
+        errors.set(`${item.id}_elevation`, 'Elevation must be a number in feet (e.g. 14 or -14.25)');
       }
-      // Keep prevInches at the last valid anchor — don't advance past an out-of-order entry
-    } else {
-      prevInches    = inches;
-      prevElevLabel = raw;
+      walk(item.children, fullCode);
+    }
+
+    // ── Sibling Level ordering ───────────────────────────────────────────────
+    // Among Level-typed siblings (in list order), each elevation must be >= the
+    // previous Level's elevation. Items with empty or invalid elevations are
+    // skipped and reset the chain so a single bad row doesn't cascade errors.
+    let prevInches: number | null = null;
+    let prevElevLabel = '';
+    for (const item of nodes) {
+      if (!isLevelType(item.type)) continue;
+      const raw = item.elevation.trim();
+      if (raw === '') { prevInches = null; prevElevLabel = ''; continue; } // empty -> reset chain
+      const inches = parseFtIn(raw);
+      if (isNaN(inches)) { prevInches = null; prevElevLabel = ''; continue; } // invalid format -> reset chain
+      if (prevInches !== null && inches < prevInches) {
+        // Only add the ordering error if no format error already exists
+        if (!errors.has(`${item.id}_elevation`)) {
+          const prevFt = parseFloat((prevInches / 12).toFixed(6)).toString();
+          errors.set(`${item.id}_elevation`, `Elevation cannot be less than the previous Level (${prevFt} ft = ${prevElevLabel})`);
+        }
+        // Keep prevInches at the last valid anchor — don't advance past an out-of-order entry
+      } else {
+        prevInches = inches;
+        prevElevLabel = raw;
+      }
     }
   }
+
+  walk(items, PROJECT_INFO.code || '');
+
+  fullCodeOwners.forEach(owners => {
+    if (owners.length <= 1) return;
+    owners.forEach(({ id, fullCode }) => {
+      errors.set(`${id}_code`, `Full Code "${fullCode}" is already used`);
+    });
+  });
 
   return errors;
 }
@@ -483,128 +505,128 @@ function mk(id: string, name: string, code: string, type: string, elevation: str
 const SITE_LBS_ITEMS_LEVELS: LBSItem[] = [
   // ── Basement 2 ─────────────────────────────────────────────────────────────
   mk('bld-b2', 'Basement 2', 'B2', 'Level', "-28'-6\"", 'Deep basement — structural works, drainage, and utility distribution', [
-    mk('bld-b2-str',  'Structural Works',   'B2-STR',  'Zone', "-28'-6\"", 'Raft slab, pile caps, and transfer beams'),
-    mk('bld-b2-drn',  'Drainage & Sumps',   'B2-DRN',  'Area', "-28'-6\"", 'Sump pits, drainage channels, and ejector pump wells'),
-    mk('bld-b2-fuel', 'Fuel Storage',       'B2-FUEL', 'Room', "-28'-6\"", 'Generator fuel tanks and secondary containment bunds'),
-    mk('bld-b2-stg',  'Medical Storage',    'B2-STG',  'Area', "-28'-6\"", 'Locked bulk storage for medical consumables and equipment'),
+    mk('bld-b2-str',  'Structural Works',   'STR',  'Zone', "-28'-6\"", 'Raft slab, pile caps, and transfer beams'),
+    mk('bld-b2-drn',  'Drainage & Sumps',   'DRN',  'Area', "-28'-6\"", 'Sump pits, drainage channels, and ejector pump wells'),
+    mk('bld-b2-fuel', 'Fuel Storage',       'FUEL', 'Room', "-28'-6\"", 'Generator fuel tanks and secondary containment bunds'),
+    mk('bld-b2-stg',  'Medical Storage',    'STG',  'Area', "-28'-6\"", 'Locked bulk storage for medical consumables and equipment'),
   ]),
   // ── Basement 1 ─────────────────────────────────────────────────────────────
   mk('bld-b1', 'Basement 1', 'B1', 'Level', "-14'-3\"", 'Below-grade parking, central plant, and hospital services', [
-    mk('bld-b1-pkg',  'Staff Parking',      'B1-PKG',  'Zone', "-14'-3\"", 'Staff and physician car parking — 180 bays'),
-    mk('bld-b1-mech', 'Central Plant Room', 'B1-MECH', 'Room', "-14'-3\"", 'Chillers, AHUs, boilers, and BMS control room'),
-    mk('bld-b1-elec', 'Electrical Room',    'B1-ELEC', 'Room', "-14'-3\"", 'Main switchboard, transformers, UPS, and generator'),
-    mk('bld-b1-strl', 'Sterile Supply',     'B1-STRL', 'Area', "-14'-3\"", 'Central sterile services department (CSSD)'),
-    mk('bld-b1-lby',  'Service Corridor',   'B1-SVC',  'Area', "-14'-3\"", 'Goods receival, waste management, and loading dock'),
+    mk('bld-b1-pkg',  'Staff Parking',      'PKG',  'Zone', "-14'-3\"", 'Staff and physician car parking — 180 bays'),
+    mk('bld-b1-mech', 'Central Plant Room', 'MECH', 'Room', "-14'-3\"", 'Chillers, AHUs, boilers, and BMS control room'),
+    mk('bld-b1-elec', 'Electrical Room',    'ELEC', 'Room', "-14'-3\"", 'Main switchboard, transformers, UPS, and generator'),
+    mk('bld-b1-strl', 'Sterile Supply',     'STRL', 'Area', "-14'-3\"", 'Central sterile services department (CSSD)'),
+    mk('bld-b1-lby',  'Service Corridor',   'SVC',  'Area', "-14'-3\"", 'Goods receival, waste management, and loading dock'),
   ]),
   // ── Level 1 (Ground) ───────────────────────────────────────────────────────
   mk('bld-l01', 'Level 1', 'L01', 'Level', "0'-0\"", 'Ground level — main entry, emergency department, and diagnostic imaging', [
-    mk('bld-l01-ent', 'Main Entry & Lobby', 'L01-ENT', 'Area', "0'-0\"", 'Public entry atrium, information desk, and wayfinding hub'),
-    mk('bld-l01-ed',  'Emergency Dept',     'L01-ED',  'Zone', "0'-0\"", 'Full emergency department including triage and resuscitation bays', [
-      mk('bld-l01-ed-tri', 'Triage',            'L01-ED-TRI', 'Area', "0'-0\"", 'Walk-in triage and ambulance receival — 6 assessment bays', [
-        mk('bld-l01-ed-tri-r1', 'Assessment Room 1', 'L01-ED-TRI-R1', 'Room', "0'-0\"", 'Primary assessment — acute presentations and ambulance handover', [
-          mk('bld-l01-ed-tri-r1-s1', 'Waiting Bay',        'L01-ED-TRI-R1-S1', 'Sub Room', "0'-0\"", 'Seated holding area adjacent to assessment room 1'),
-          mk('bld-l01-ed-tri-r1-s2', 'Examination Cubicle','L01-ED-TRI-R1-S2', 'Sub Room', "0'-0\"", 'Curtained examination cubicle with vitals monitoring point'),
+    mk('bld-l01-ent', 'Main Entry & Lobby', 'ENT', 'Area', "0'-0\"", 'Public entry atrium, information desk, and wayfinding hub'),
+    mk('bld-l01-ed',  'Emergency Dept',     'ED',  'Zone', "0'-0\"", 'Full emergency department including triage and resuscitation bays', [
+      mk('bld-l01-ed-tri', 'Triage',            'TRI', 'Area', "0'-0\"", 'Walk-in triage and ambulance receival — 6 assessment bays', [
+        mk('bld-l01-ed-tri-r1', 'Assessment Room 1', 'R1', 'Room', "0'-0\"", 'Primary assessment — acute presentations and ambulance handover', [
+          mk('bld-l01-ed-tri-r1-s1', 'Waiting Bay',        'S1', 'Sub Room', "0'-0\"", 'Seated holding area adjacent to assessment room 1'),
+          mk('bld-l01-ed-tri-r1-s2', 'Examination Cubicle','S2', 'Sub Room', "0'-0\"", 'Curtained examination cubicle with vitals monitoring point'),
         ]),
-        mk('bld-l01-ed-tri-r2', 'Assessment Room 2', 'L01-ED-TRI-R2', 'Room', "0'-0\"", 'Secondary assessment — walk-in and minor injury presentations', [
-          mk('bld-l01-ed-tri-r2-s1', 'Waiting Bay',        'L01-ED-TRI-R2-S1', 'Sub Room', "0'-0\"", 'Seated holding area adjacent to assessment room 2'),
-          mk('bld-l01-ed-tri-r2-s2', 'Nurse Station',      'L01-ED-TRI-R2-S2', 'Sub Room', "0'-0\"", 'Triage nurse workstation with EMR terminal and drug storage'),
+        mk('bld-l01-ed-tri-r2', 'Assessment Room 2', 'R2', 'Room', "0'-0\"", 'Secondary assessment — walk-in and minor injury presentations', [
+          mk('bld-l01-ed-tri-r2-s1', 'Waiting Bay',        'S1', 'Sub Room', "0'-0\"", 'Seated holding area adjacent to assessment room 2'),
+          mk('bld-l01-ed-tri-r2-s2', 'Nurse Station',      'S2', 'Sub Room', "0'-0\"", 'Triage nurse workstation with EMR terminal and drug storage'),
         ]),
-        mk('bld-l01-ed-tri-r3', 'Isolation Room',   'L01-ED-TRI-R3', 'Room', "0'-0\"", 'Negative-pressure triage isolation for suspected infectious cases', [
-          mk('bld-l01-ed-tri-r3-s1', 'Anteroom',           'L01-ED-TRI-R3-S1', 'Sub Room', "0'-0\"", 'PPE donning/doffing anteroom with hand hygiene station'),
-          mk('bld-l01-ed-tri-r3-s2', 'Patient Bay',        'L01-ED-TRI-R3-S2', 'Sub Room', "0'-0\"", 'Single-bed isolation bay with negative-pressure ventilation'),
+        mk('bld-l01-ed-tri-r3', 'Isolation Room',   'R3', 'Room', "0'-0\"", 'Negative-pressure triage isolation for suspected infectious cases', [
+          mk('bld-l01-ed-tri-r3-s1', 'Anteroom',           'S1', 'Sub Room', "0'-0\"", 'PPE donning/doffing anteroom with hand hygiene station'),
+          mk('bld-l01-ed-tri-r3-s2', 'Patient Bay',        'S2', 'Sub Room', "0'-0\"", 'Single-bed isolation bay with negative-pressure ventilation'),
         ]),
       ]),
-      mk('bld-l01-ed-res', 'Resuscitation',     'L01-ED-RES', 'Room', "0'-0\"", 'Four-bay resus room with crash cart and defibrillator access'),
-      mk('bld-l01-ed-obs', 'Observation Ward',  'L01-ED-OBS', 'Area', "0'-0\"", 'Short-stay observation — 20 monitored beds'),
+      mk('bld-l01-ed-res', 'Resuscitation',     'RES', 'Room', "0'-0\"", 'Four-bay resus room with crash cart and defibrillator access'),
+      mk('bld-l01-ed-obs', 'Observation Ward',  'OBS', 'Area', "0'-0\"", 'Short-stay observation — 20 monitored beds'),
     ]),
-    mk('bld-l01-img', 'Diagnostic Imaging',  'L01-IMG', 'Zone', "0'-0\"", 'Radiology, CT, MRI, and fluoroscopy suites', [
-      mk('bld-l01-img-xr', 'X-Ray Suite',   'L01-IMG-XR', 'Room', "0'-0\"", 'Four digital X-ray rooms with lead-lined walls'),
-      mk('bld-l01-img-ct', 'CT Suite',      'L01-IMG-CT', 'Room', "0'-0\"", 'Dual 64-slice CT scanners with control and prep areas'),
-      mk('bld-l01-img-mr', 'MRI Suite',     'L01-IMG-MR', 'Room', "0'-0\"", '3T MRI scanner with RF-shielded bore room and console'),
+    mk('bld-l01-img', 'Diagnostic Imaging',  'IMG', 'Zone', "0'-0\"", 'Radiology, CT, MRI, and fluoroscopy suites', [
+      mk('bld-l01-img-xr', 'X-Ray Suite',   'XR', 'Room', "0'-0\"", 'Four digital X-ray rooms with lead-lined walls'),
+      mk('bld-l01-img-ct', 'CT Suite',      'CT', 'Room', "0'-0\"", 'Dual 64-slice CT scanners with control and prep areas'),
+      mk('bld-l01-img-mr', 'MRI Suite',     'MR', 'Room', "0'-0\"", '3T MRI scanner with RF-shielded bore room and console'),
     ]),
-    mk('bld-l01-phr', 'Pharmacy',            'L01-PHR', 'Room', "0'-0\"", 'Inpatient and outpatient dispensary with robotic dispensing unit'),
-    mk('bld-l01-svc', 'Support Services',    'L01-SVC', 'Zone', "0'-0\"", 'Electrical risers, comms rooms, and service corridors'),
+    mk('bld-l01-phr', 'Pharmacy',            'PHR', 'Room', "0'-0\"", 'Inpatient and outpatient dispensary with robotic dispensing unit'),
+    mk('bld-l01-svc', 'Support Services',    'SVC', 'Zone', "0'-0\"", 'Electrical risers, comms rooms, and service corridors'),
   ]),
   // ── Level 2 ────────────────────────────────────────────────────────────────
   mk('bld-l02', 'Level 2', 'L02', 'Level', "14'-0\"", 'Surgical floor — operating theatres, recovery, and pre-op', [
-    mk('bld-l02-or',  'Surgical Suite',     'L02-OR',  'Zone', "14'-0\"", 'Eight operating theatres with laminar-flow HVAC', [
-      mk('bld-l02-or-t1', 'Theatre 1 — General',    'L02-OR-T1', 'Room', "14'-0\"", 'General and laparoscopic surgery — 650 ft²'),
-      mk('bld-l02-or-t2', 'Theatre 2 — General',    'L02-OR-T2', 'Room', "14'-0\"", 'General and laparoscopic surgery — 650 ft²'),
-      mk('bld-l02-or-t3', 'Theatre 3 — Orthopaedic','L02-OR-T3', 'Room', "14'-0\"", 'Orthopaedic and joint replacement — 750 ft²'),
-      mk('bld-l02-or-t4', 'Theatre 4 — Cardiac',    'L02-OR-T4', 'Room', "14'-0\"", 'Cardiac and thoracic surgery — 900 ft²'),
+    mk('bld-l02-or',  'Surgical Suite',     'OR',  'Zone', "14'-0\"", 'Eight operating theatres with laminar-flow HVAC', [
+      mk('bld-l02-or-t1', 'Theatre 1 — General',    'T1', 'Room', "14'-0\"", 'General and laparoscopic surgery — 650 ft²'),
+      mk('bld-l02-or-t2', 'Theatre 2 — General',    'T2', 'Room', "14'-0\"", 'General and laparoscopic surgery — 650 ft²'),
+      mk('bld-l02-or-t3', 'Theatre 3 — Orthopaedic','T3', 'Room', "14'-0\"", 'Orthopaedic and joint replacement — 750 ft²'),
+      mk('bld-l02-or-t4', 'Theatre 4 — Cardiac',    'T4', 'Room', "14'-0\"", 'Cardiac and thoracic surgery — 900 ft²'),
     ]),
-    mk('bld-l02-pre', 'Pre-Op Zone',        'L02-PRE', 'Area', "14'-0\"", '24 pre-operative preparation bays with anaesthetic rooms', [
-      mk('bld-l02-pre-r1', 'Pre-Op Bay A', 'L02-PRE-RA', 'Room', "14'-0\"", 'Bays 1–8 — pre-anaesthetic assessment and IV cannulation', [
-        mk('bld-l02-pre-r1-s1', 'Patient Holding',    'L02-PRE-RA-S1', 'Sub Room', "14'-0\"", 'Curtained bay with recliner, IV pole, and call button'),
-        mk('bld-l02-pre-r1-s2', 'Anaesthetic Sub-Bay','L02-PRE-RA-S2', 'Sub Room', "14'-0\"", 'Anaesthetist workstation with airway equipment cart'),
+    mk('bld-l02-pre', 'Pre-Op Zone',        'PRE', 'Area', "14'-0\"", '24 pre-operative preparation bays with anaesthetic rooms', [
+      mk('bld-l02-pre-r1', 'Pre-Op Bay A', 'RA', 'Room', "14'-0\"", 'Bays 1–8 — pre-anaesthetic assessment and IV cannulation', [
+        mk('bld-l02-pre-r1-s1', 'Patient Holding',    'S1', 'Sub Room', "14'-0\"", 'Curtained bay with recliner, IV pole, and call button'),
+        mk('bld-l02-pre-r1-s2', 'Anaesthetic Sub-Bay','S2', 'Sub Room', "14'-0\"", 'Anaesthetist workstation with airway equipment cart'),
       ]),
-      mk('bld-l02-pre-r2', 'Pre-Op Bay B', 'L02-PRE-RB', 'Room', "14'-0\"", 'Bays 9–16 — patient preparation and consent documentation', [
-        mk('bld-l02-pre-r2-s1', 'Patient Holding',    'L02-PRE-RB-S1', 'Sub Room', "14'-0\"", 'Curtained bay with recliner, IV pole, and call button'),
-        mk('bld-l02-pre-r2-s2', 'Family Waiting Nook','L02-PRE-RB-S2', 'Sub Room', "14'-0\"", 'Adjacent seated alcove for one accompanying family member'),
+      mk('bld-l02-pre-r2', 'Pre-Op Bay B', 'RB', 'Room', "14'-0\"", 'Bays 9–16 — patient preparation and consent documentation', [
+        mk('bld-l02-pre-r2-s1', 'Patient Holding',    'S1', 'Sub Room', "14'-0\"", 'Curtained bay with recliner, IV pole, and call button'),
+        mk('bld-l02-pre-r2-s2', 'Family Waiting Nook','S2', 'Sub Room', "14'-0\"", 'Adjacent seated alcove for one accompanying family member'),
       ]),
-      mk('bld-l02-pre-r3', 'Pre-Op Bay C', 'L02-PRE-RC', 'Room', "14'-0\"", 'Bays 17–24 — paediatric and bariatric surgical prep', [
-        mk('bld-l02-pre-r3-s1', 'Paediatric Sub-Bay', 'L02-PRE-RC-S1', 'Sub Room', "14'-0\"", 'Child-friendly bay with cot-height trolley and play distraction'),
-        mk('bld-l02-pre-r3-s2', 'Bariatric Sub-Bay',  'L02-PRE-RC-S2', 'Sub Room', "14'-0\"", 'Wide-access bay with bariatric bed and reinforced flooring'),
+      mk('bld-l02-pre-r3', 'Pre-Op Bay C', 'RC', 'Room', "14'-0\"", 'Bays 17–24 — paediatric and bariatric surgical prep', [
+        mk('bld-l02-pre-r3-s1', 'Paediatric Sub-Bay', 'S1', 'Sub Room', "14'-0\"", 'Child-friendly bay with cot-height trolley and play distraction'),
+        mk('bld-l02-pre-r3-s2', 'Bariatric Sub-Bay',  'S2', 'Sub Room', "14'-0\"", 'Wide-access bay with bariatric bed and reinforced flooring'),
       ]),
     ]),
-    mk('bld-l02-rec', 'Recovery (PACU)',    'L02-REC', 'Area', "14'-0\"", 'Post-anaesthesia care unit — 32 stage-1 and stage-2 bays'),
-    mk('bld-l02-ssd', 'Sterile Store',      'L02-SSD', 'Room', "14'-0\"", 'Surgical instrument and sterile goods holding room'),
-    mk('bld-l02-svc', 'Support Services',   'L02-SVC', 'Zone', "14'-0\"", 'Clean utility, soiled utility, and anaesthetic gas plant'),
+    mk('bld-l02-rec', 'Recovery (PACU)',    'REC', 'Area', "14'-0\"", 'Post-anaesthesia care unit — 32 stage-1 and stage-2 bays'),
+    mk('bld-l02-ssd', 'Sterile Store',      'SSD', 'Room', "14'-0\"", 'Surgical instrument and sterile goods holding room'),
+    mk('bld-l02-svc', 'Support Services',   'SVC', 'Zone', "14'-0\"", 'Clean utility, soiled utility, and anaesthetic gas plant'),
   ]),
   // ── Level 3 ────────────────────────────────────────────────────────────────
   mk('bld-l03', 'Level 3', 'L03', 'Level', "28'-0\"", 'Critical care floor — ICU, CCU, and high dependency unit', [
-    mk('bld-l03-icu', 'Intensive Care Unit', 'L03-ICU', 'Zone', "28'-0\"", '24-bed closed-format ICU with centralised nursing station', [
-      mk('bld-l03-icu-a', 'ICU Pod A',  'L03-ICU-A', 'Area', "28'-0\"", 'Beds 1–8 — single-patient isolation rooms with anterooms'),
-      mk('bld-l03-icu-b', 'ICU Pod B',  'L03-ICU-B', 'Area', "28'-0\"", 'Beds 9–16 — open-bay critical care with curtain privacy'),
-      mk('bld-l03-icu-c', 'ICU Pod C',  'L03-ICU-C', 'Area', "28'-0\"", 'Beds 17–24 — step-down monitoring with telemetry'),
+    mk('bld-l03-icu', 'Intensive Care Unit', 'ICU', 'Zone', "28'-0\"", '24-bed closed-format ICU with centralised nursing station', [
+      mk('bld-l03-icu-a', 'ICU Pod A',  'A', 'Area', "28'-0\"", 'Beds 1–8 — single-patient isolation rooms with anterooms'),
+      mk('bld-l03-icu-b', 'ICU Pod B',  'B', 'Area', "28'-0\"", 'Beds 9–16 — open-bay critical care with curtain privacy'),
+      mk('bld-l03-icu-c', 'ICU Pod C',  'C', 'Area', "28'-0\"", 'Beds 17–24 — step-down monitoring with telemetry'),
     ]),
-    mk('bld-l03-ccu', 'Cardiac Care Unit',  'L03-CCU', 'Zone', "28'-0\"", '12-bed CCU with continuous cardiac monitoring'),
-    mk('bld-l03-hdu', 'High Dependency',    'L03-HDU', 'Area', "28'-0\"", '16-bed HDU for post-surgical and complex medical patients'),
-    mk('bld-l03-neo', 'Neonatal ICU',       'L03-NEO', 'Area', "28'-0\"", '18-bassinet NICU with isolette bays and family rooms'),
-    mk('bld-l03-svc', 'Support Services',   'L03-SVC', 'Zone', "28'-0\"", 'Clean utility, medication room, and equipment storage'),
+    mk('bld-l03-ccu', 'Cardiac Care Unit',  'CCU', 'Zone', "28'-0\"", '12-bed CCU with continuous cardiac monitoring'),
+    mk('bld-l03-hdu', 'High Dependency',    'HDU', 'Area', "28'-0\"", '16-bed HDU for post-surgical and complex medical patients'),
+    mk('bld-l03-neo', 'Neonatal ICU',       'NEO', 'Area', "28'-0\"", '18-bassinet NICU with isolette bays and family rooms'),
+    mk('bld-l03-svc', 'Support Services',   'SVC', 'Zone', "28'-0\"", 'Clean utility, medication room, and equipment storage'),
   ]),
   // ── Level 4 ────────────────────────────────────────────────────────────────
   mk('bld-l04', 'Level 4', 'L04', 'Level', "42'-0\"", 'Inpatient wards — medical and surgical beds', [
-    mk('bld-l04-mwd', 'Medical Ward',      'L04-MWD', 'Zone', "42'-0\"", '40-bed general medical ward — north wing', [
-      mk('bld-l04-mwd-a', 'Ward A (Beds 1–20)',  'L04-MWD-A', 'Area', "42'-0\"", 'Single and twin rooms — acute medical patients', [
-        mk('bld-l04-mwd-a-r01', 'Room 101', 'L04-MWD-A-R101', 'Room', "42'-0\"", 'Single-bed private room — acute medical, north-facing', [
-          mk('bld-l04-mwd-a-r01-s1', 'Ensuite Bathroom', 'L04-MWD-A-R101-ENS', 'Sub Room', "42'-0\"", 'Private ensuite with shower, toilet, and grab rails'),
-          mk('bld-l04-mwd-a-r01-s2', 'Wardrobe Alcove',  'L04-MWD-A-R101-WRD', 'Sub Room', "42'-0\"", 'Built-in wardrobe and personal belongings storage alcove'),
+    mk('bld-l04-mwd', 'Medical Ward',      'MWD', 'Zone', "42'-0\"", '40-bed general medical ward — north wing', [
+      mk('bld-l04-mwd-a', 'Ward A (Beds 1–20)',  'A', 'Area', "42'-0\"", 'Single and twin rooms — acute medical patients', [
+        mk('bld-l04-mwd-a-r01', 'Room 101', 'R101', 'Room', "42'-0\"", 'Single-bed private room — acute medical, north-facing', [
+          mk('bld-l04-mwd-a-r01-s1', 'Ensuite Bathroom', 'ENS', 'Sub Room', "42'-0\"", 'Private ensuite with shower, toilet, and grab rails'),
+          mk('bld-l04-mwd-a-r01-s2', 'Wardrobe Alcove',  'WRD', 'Sub Room', "42'-0\"", 'Built-in wardrobe and personal belongings storage alcove'),
         ]),
-        mk('bld-l04-mwd-a-r02', 'Room 102', 'L04-MWD-A-R102', 'Room', "42'-0\"", 'Twin-bed room — acute medical, north-facing', [
-          mk('bld-l04-mwd-a-r02-s1', 'Ensuite Bathroom', 'L04-MWD-A-R102-ENS', 'Sub Room', "42'-0\"", 'Shared ensuite with shower, toilet, and grab rails'),
-          mk('bld-l04-mwd-a-r02-s2', 'Visitor Seating',  'L04-MWD-A-R102-VIS', 'Sub Room', "42'-0\"", 'Bedside visitor zone with two chairs and privacy curtain'),
+        mk('bld-l04-mwd-a-r02', 'Room 102', 'R102', 'Room', "42'-0\"", 'Twin-bed room — acute medical, north-facing', [
+          mk('bld-l04-mwd-a-r02-s1', 'Ensuite Bathroom', 'ENS', 'Sub Room', "42'-0\"", 'Shared ensuite with shower, toilet, and grab rails'),
+          mk('bld-l04-mwd-a-r02-s2', 'Visitor Seating',  'VIS', 'Sub Room', "42'-0\"", 'Bedside visitor zone with two chairs and privacy curtain'),
         ]),
-        mk('bld-l04-mwd-a-r03', 'Room 103', 'L04-MWD-A-R103', 'Room', "42'-0\"", 'Single-bed isolation room — contact precautions', [
-          mk('bld-l04-mwd-a-r03-s1', 'Anteroom',          'L04-MWD-A-R103-ANT', 'Sub Room', "42'-0\"", 'PPE anteroom with sink, glove dispenser, and apron rack'),
-          mk('bld-l04-mwd-a-r03-s2', 'Patient Bay',       'L04-MWD-A-R103-BAY', 'Sub Room', "42'-0\"", 'Isolation patient bay with negative-pressure exhaust'),
+        mk('bld-l04-mwd-a-r03', 'Room 103', 'R103', 'Room', "42'-0\"", 'Single-bed isolation room — contact precautions', [
+          mk('bld-l04-mwd-a-r03-s1', 'Anteroom',          'ANT', 'Sub Room', "42'-0\"", 'PPE anteroom with sink, glove dispenser, and apron rack'),
+          mk('bld-l04-mwd-a-r03-s2', 'Patient Bay',       'BAY', 'Sub Room', "42'-0\"", 'Isolation patient bay with negative-pressure exhaust'),
         ]),
       ]),
-      mk('bld-l04-mwd-b', 'Ward B (Beds 21–40)', 'L04-MWD-B', 'Area', "42'-0\"", 'Single and twin rooms — sub-acute and step-down', [
-        mk('bld-l04-mwd-b-r01', 'Room 104', 'L04-MWD-B-R104', 'Room', "42'-0\"", 'Single-bed room — sub-acute step-down, south-facing', [
-          mk('bld-l04-mwd-b-r01-s1', 'Ensuite Bathroom', 'L04-MWD-B-R104-ENS', 'Sub Room', "42'-0\"", 'Private ensuite with shower, toilet, and grab rails'),
-          mk('bld-l04-mwd-b-r01-s2', 'Wardrobe Alcove',  'L04-MWD-B-R104-WRD', 'Sub Room', "42'-0\"", 'Built-in wardrobe and personal belongings storage alcove'),
+      mk('bld-l04-mwd-b', 'Ward B (Beds 21–40)', 'B', 'Area', "42'-0\"", 'Single and twin rooms — sub-acute and step-down', [
+        mk('bld-l04-mwd-b-r01', 'Room 104', 'R104', 'Room', "42'-0\"", 'Single-bed room — sub-acute step-down, south-facing', [
+          mk('bld-l04-mwd-b-r01-s1', 'Ensuite Bathroom', 'ENS', 'Sub Room', "42'-0\"", 'Private ensuite with shower, toilet, and grab rails'),
+          mk('bld-l04-mwd-b-r01-s2', 'Wardrobe Alcove',  'WRD', 'Sub Room', "42'-0\"", 'Built-in wardrobe and personal belongings storage alcove'),
         ]),
-        mk('bld-l04-mwd-b-r02', 'Room 105', 'L04-MWD-B-R105', 'Room', "42'-0\"", 'Twin-bed room — sub-acute, south-facing', [
-          mk('bld-l04-mwd-b-r02-s1', 'Ensuite Bathroom', 'L04-MWD-B-R105-ENS', 'Sub Room', "42'-0\"", 'Shared ensuite with shower, toilet, and grab rails'),
-          mk('bld-l04-mwd-b-r02-s2', 'Visitor Seating',  'L04-MWD-B-R105-VIS', 'Sub Room', "42'-0\"", 'Bedside visitor zone with two chairs and privacy curtain'),
+        mk('bld-l04-mwd-b-r02', 'Room 105', 'R105', 'Room', "42'-0\"", 'Twin-bed room — sub-acute, south-facing', [
+          mk('bld-l04-mwd-b-r02-s1', 'Ensuite Bathroom', 'ENS', 'Sub Room', "42'-0\"", 'Shared ensuite with shower, toilet, and grab rails'),
+          mk('bld-l04-mwd-b-r02-s2', 'Visitor Seating',  'VIS', 'Sub Room', "42'-0\"", 'Bedside visitor zone with two chairs and privacy curtain'),
         ]),
       ]),
     ]),
-    mk('bld-l04-swd', 'Surgical Ward',     'L04-SWD', 'Zone', "42'-0\"", '36-bed post-surgical ward — south wing', [
-      mk('bld-l04-swd-a', 'Ward C (Beds 1–18)',  'L04-SWD-A', 'Area', "42'-0\"", 'Post-op orthopaedic and general surgery patients'),
-      mk('bld-l04-swd-b', 'Ward D (Beds 19–36)', 'L04-SWD-B', 'Area', "42'-0\"", 'Post-op cardiac and thoracic surgery patients'),
+    mk('bld-l04-swd', 'Surgical Ward',     'SWD', 'Zone', "42'-0\"", '36-bed post-surgical ward — south wing', [
+      mk('bld-l04-swd-a', 'Ward C (Beds 1–18)',  'A', 'Area', "42'-0\"", 'Post-op orthopaedic and general surgery patients'),
+      mk('bld-l04-swd-b', 'Ward D (Beds 19–36)', 'B', 'Area', "42'-0\"", 'Post-op cardiac and thoracic surgery patients'),
     ]),
-    mk('bld-l04-iso', 'Isolation Rooms',   'L04-ISO', 'Area', "42'-0\"", 'Eight negative-pressure isolation rooms for infectious cases'),
-    mk('bld-l04-stn', 'Nursing Stations',  'L04-STN', 'Area', "42'-0\"", 'Central nursing stations, medication rooms, and clean utility'),
-    mk('bld-l04-svc', 'Support Services',  'L04-SVC', 'Zone', "42'-0\"", 'Soiled utility, linen store, and equipment bay'),
+    mk('bld-l04-iso', 'Isolation Rooms',   'ISO', 'Area', "42'-0\"", 'Eight negative-pressure isolation rooms for infectious cases'),
+    mk('bld-l04-stn', 'Nursing Stations',  'STN', 'Area', "42'-0\"", 'Central nursing stations, medication rooms, and clean utility'),
+    mk('bld-l04-svc', 'Support Services',  'SVC', 'Zone', "42'-0\"", 'Soiled utility, linen store, and equipment bay'),
   ]),
   // ── Roof Level ─────────────────────────────────────────────────────────────
   mk('bld-roof', 'Roof Level', 'ROOF', 'Level', "56'-0\"", 'Rooftop plant, helipad, and services infrastructure', [
-    mk('bld-roof-heli', 'Helipad',          'ROOF-HELI', 'Area', "56'-0\"", 'FATO-compliant helicopter landing and takeoff area with lighting'),
-    mk('bld-roof-plt',  'Plant Room',       'ROOF-PLT',  'Room', "56'-0\"", 'Cooling towers, AHUs, medical gas manifolds, and BMS nodes'),
-    mk('bld-roof-pvl',  'PV Array Zone',    'ROOF-PVL',  'Zone', "56'-0\"", 'Solar photovoltaic panel array — 480 kW capacity'),
-    mk('bld-roof-com',  'Comms & Antenna',  'ROOF-COM',  'Area', "56'-0\"", 'Telecoms mast, nurse call radio, and wireless AP infrastructure'),
+    mk('bld-roof-heli', 'Helipad',          'HELI', 'Area', "56'-0\"", 'FATO-compliant helicopter landing and takeoff area with lighting'),
+    mk('bld-roof-plt',  'Plant Room',       'PLT',  'Room', "56'-0\"", 'Cooling towers, AHUs, medical gas manifolds, and BMS nodes'),
+    mk('bld-roof-pvl',  'PV Array Zone',    'PVL',  'Zone', "56'-0\"", 'Solar photovoltaic panel array — 480 kW capacity'),
+    mk('bld-roof-com',  'Comms & Antenna',  'COM',  'Area', "56'-0\"", 'Telecoms mast, nurse call radio, and wireless AP infrastructure'),
   ]),
 ];
 
@@ -617,19 +639,19 @@ const SITE_LBS_ITEMS: LBSItem[] = [
 
 const ZONE_LBS_ITEMS: LBSItem[] = [
   mk('z-com', 'Common Areas', 'Z-COM', 'Zone', "0'-0\"", 'Shared spaces accessible to all occupants', [
-    mk('z-com-cor', 'Corridors & Circulation', 'Z-COM-COR', 'Area', "0'-0\"", 'Lift lobbies, fire stairs, and common corridors'),
-    mk('z-com-tlt', 'Amenities', 'Z-COM-TLT', 'Area', "0'-0\"", 'Bathrooms and accessible facilities per floor'),
-    mk('z-com-svc', 'Services Zones', 'Z-COM-SVC', 'Zone', "0'-0\"", 'Risers, switch rooms, and electrical cupboards'),
+    mk('z-com-cor', 'Corridors & Circulation', 'COR', 'Area', "0'-0\"", 'Lift lobbies, fire stairs, and common corridors'),
+    mk('z-com-tlt', 'Amenities', 'TLT', 'Area', "0'-0\"", 'Bathrooms and accessible facilities per floor'),
+    mk('z-com-svc', 'Services Zones', 'SVC', 'Zone', "0'-0\"", 'Risers, switch rooms, and electrical cupboards'),
   ]),
   mk('z-ten', 'Tenancy Areas', 'Z-TEN', 'Zone', "0'-0\"", 'Demised areas leased to individual tenants', [
-    mk('z-ten-offa', 'Office Tenancy A', 'Z-TEN-OFFA', 'Area', "13'-9\"", 'Level 1 north — 600 m²'),
-    mk('z-ten-offb', 'Office Tenancy B', 'Z-TEN-OFFB', 'Area', "13'-9\"", 'Level 1 south — 600 m²'),
-    mk('z-ten-retl', 'Retail Tenancies', 'Z-TEN-RETL', 'Area', "0'-0\"", 'Ground floor street-front retail units'),
+    mk('z-ten-offa', 'Office Tenancy A', 'OFFA', 'Area', "13'-9\"", 'Level 1 north — 600 m²'),
+    mk('z-ten-offb', 'Office Tenancy B', 'OFFB', 'Area', "13'-9\"", 'Level 1 south — 600 m²'),
+    mk('z-ten-retl', 'Retail Tenancies', 'RETL', 'Area', "0'-0\"", 'Ground floor street-front retail units'),
   ]),
   mk('z-plant', 'Plant & Services', 'Z-PLANT', 'Zone', "0'-0\"", 'Dedicated mechanical and electrical service areas', [
-    mk('z-plant-mech', 'Mechanical Plant', 'Z-PLANT-MECH', 'Area', "0'-0\"", 'AHUs, FCUs, and HVAC plant areas'),
-    mk('z-plant-elec', 'Electrical Plant', 'Z-PLANT-ELEC', 'Area', "0'-0\"", 'Switchboards, transformers, and UPS rooms'),
-    mk('z-plant-comm', 'Communications', 'Z-PLANT-COMM', 'Area', "0'-0\"", 'Data racks, comms rooms, and IDF locations'),
+    mk('z-plant-mech', 'Mechanical Plant', 'MECH', 'Area', "0'-0\"", 'AHUs, FCUs, and HVAC plant areas'),
+    mk('z-plant-elec', 'Electrical Plant', 'ELEC', 'Area', "0'-0\"", 'Switchboards, transformers, and UPS rooms'),
+    mk('z-plant-comm', 'Communications', 'COMM', 'Area', "0'-0\"", 'Data racks, comms rooms, and IDF locations'),
   ]),
 ];
 
@@ -665,7 +687,7 @@ const SEP_DEFS = [
 type SepOption = typeof SEP_DEFS[number]['id'];
 
 function getSepStr(id: SepOption): string {
-  return SEP_DEFS.find(s => s.id === id)?.sepStr ?? ' | ';
+  return SEP_DEFS.find(s => s.id === id)?.sepStr ?? '.';
 }
 
 function buildFullCodeMap(items: LBSItem[], prefix = '', sep = ' / '): Map<string, string> {
@@ -712,6 +734,7 @@ function SeparatorDropdown({ value, onChange }: { value: SepOption; onChange: (v
     <>
       <button
         ref={btnRef}
+        data-dev-anchor="lbs-separator"
         onClick={e => { e.stopPropagation(); toggle(); }}
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
@@ -1146,7 +1169,7 @@ function NodeAddIcon({ stroke = '#FF4D00', size = 22 }: { stroke?: string; size?
 function ValidationBanner({ count }: { count: number }) {
   if (count === 0) return null;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', height: 36, flexShrink: 0, background: '#FFF1F0', borderBottom: '1px solid #FFA39E' }}>
+    <div data-dev-anchor="lbs-edit-validation" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', height: 36, flexShrink: 0, background: '#FFF1F0', borderBottom: '1px solid #FFA39E' }}>
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
         <path d="M10 7v4M10 13.5v.5" stroke="#D92D20" strokeWidth="1.75" strokeLinecap="round" />
         <path d="M8.485 2.929L1.393 15.5A1.75 1.75 0 002.908 18h14.184a1.75 1.75 0 001.515-2.5L11.515 2.929a1.75 1.75 0 00-3.03 0Z" stroke="#D92D20" strokeWidth="1.5" strokeLinejoin="round" />
@@ -1566,10 +1589,10 @@ function ColResizeHandle({ colKey, onDelta, cellHovered }: {
 }
 
 // ─── Header cell ──────────────────────────────────────────────────────────────
-function LBSHeaderCell({ label, style, editMode = false, required = false, colKey, onDelta, fillFlex = false, stickyLeft, showInfoTooltip = false }: {
+function LBSHeaderCell({ label, style, editMode = false, required = false, colKey, onDelta, fillFlex = false, stickyLeft, showInfoTooltip = false, devAnchor }: {
   label: string; style?: React.CSSProperties; editMode?: boolean; required?: boolean;
   colKey?: string; onDelta?: (key: string, delta: number) => void; fillFlex?: boolean;
-  stickyLeft?: number; showInfoTooltip?: boolean;
+  stickyLeft?: number; showInfoTooltip?: boolean; devAnchor?: string;
 }) {
   const [hovered, setHovered] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -1599,7 +1622,7 @@ function LBSHeaderCell({ label, style, editMode = false, required = false, colKe
       onMouseLeave={() => setHovered(false)}
     >
       <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-        {label}
+        <span data-dev-anchor={devAnchor}>{label}</span>
         {required && editMode && (
           <span style={{ color: '#D92D20', fontWeight: 600, fontSize: 13, lineHeight: 1, flexShrink: 0 }}>*</span>
         )}
@@ -3824,7 +3847,7 @@ export function LocationBreakdownStructure() {
   const [editMode, setEditMode]     = useState(false);
   const [editItems, setEditItems]   = useState<LBSItem[]>([]);
   const [showErrors, setShowErrors] = useState(false);
-  const [separator, setSeparator]   = useState<SepOption>('|');
+  const [separator, setSeparator]   = useState<SepOption>('.');
 
   // ── Project Context toggle (edit mode only)
   const [showProjectContext, setShowProjectContext] = useState(true);
@@ -3952,7 +3975,7 @@ export function LocationBreakdownStructure() {
       setShowErrors(true);
       return;
     }
-    const errors = validateItems(editItems);
+    const errors = validateItems(editItems, new Map<string, string>(), getSepStr(separator));
     if (errors.size > 0) { setShowErrors(true); return; }
     saveTabItems(propagateElevations(editItems));
     setEditMode(false); setEditItems([]); setShowErrors(false);
@@ -3960,7 +3983,7 @@ export function LocationBreakdownStructure() {
     setExpanded(new Set()); // reset to Collapse All on returning to view mode
   }
 
-  const allErrors  = useMemo(() => editMode ? validateItems(editItems) : new Map<string, string>(), [editItems, editMode]);
+  const allErrors  = useMemo(() => editMode ? validateItems(editItems, new Map<string, string>(), getSepStr(separator)) : new Map<string, string>(), [editItems, editMode, separator]);
   const editErrors = showErrors ? allErrors : new Map<string, string>();
 
   // ── Edit helpers
@@ -4779,7 +4802,7 @@ export function LocationBreakdownStructure() {
       {isDragging && dragItemRef.current && <DragPreview x={previewPos.x} y={previewPos.y} item={dragItemRef.current} />}
 
       {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexShrink: 0, paddingTop: 8 }}>
+      <div data-dev-anchor="lbs-tabs" style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexShrink: 0, paddingTop: 8 }}>
         {tabs.map(tab => (
           <TabItem
             key={tab.id}
@@ -4840,7 +4863,7 @@ export function LocationBreakdownStructure() {
       )}
 
       {/* ── Primary LBS Table Container ───────────────────────────────────── */}
-      {activeView === 'primary' && <div style={{ flex: 1, border: '1px solid #D9D9D9', borderRadius: '0 8px 8px 8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, background: 'white' }}>
+      {activeView === 'primary' && <div data-dev-page-mode={editMode ? 'edit' : 'view'} style={{ flex: 1, border: '1px solid #D9D9D9', borderRadius: '0 8px 8px 8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, background: 'white' }}>
 
         {/* ── Toolbar ──────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60, flexShrink: 0, paddingLeft: 12, paddingRight: 12, background: '#FAFAFA', borderBottom: '1px solid #D9D9D9', gap: 8 }}>
@@ -4849,7 +4872,7 @@ export function LocationBreakdownStructure() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Add Building / Add Level buttons are now in the Actions column of Project / Building rows */}
             {/* Search — always visible */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: colWidths.name, flexShrink: 0 }}>
+            <div data-dev-anchor="lbs-search" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: colWidths.name, flexShrink: 0 }}>
               <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><SearchIcon /></div>
               <input type="text" placeholder="Search locations…" value={search} onChange={e => setSearch(e.target.value)}
                 style={{ width: '100%', height: 36, paddingLeft: 34, paddingRight: showClear ? 34 : 10, border: '1px solid #D0D5DD', borderRadius: 4, fontFamily: 'Open Sans, sans-serif', fontSize: 14, fontWeight: 400, color: '#344054', background: '#FFFFFF', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
@@ -4875,7 +4898,7 @@ export function LocationBreakdownStructure() {
           </div>
 
           {/* ── RIGHT section ────────────────────────────────────────────────── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div data-dev-anchor={editMode ? 'lbs-edit-save-cancel' : 'lbs-import-export'} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {editMode ? (
               <>
                 <CancelBtn onClick={cancelEdit} />
@@ -4926,7 +4949,7 @@ export function LocationBreakdownStructure() {
         <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
 
         {/* ── Scrollable area (MainCanvas) ───────────────────────────────────── */}
-        <div data-lbs-scroll style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}>
+        <div data-lbs-scroll data-dev-anchor="lbs-tree" style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}>
           {/* VS is now flex-fill — its 120px min counts; Elevation always fixed; Actions is sticky so excluded */}
           <div style={{ minWidth: (editMode ? 24 : 0) + colWidths.name + colWidths.code + colWidths.fullCode + colWidths.type + colWidths.elevation + 120, display: 'flex', flexDirection: 'column' }}>
 
@@ -4937,11 +4960,11 @@ export function LocationBreakdownStructure() {
               {/* 1 — Location Name — frozen (sticky-left) */}
               <LBSHeaderCell label="Location Name" style={{ width: colWidths.name }}      editMode={editMode} required colKey="name" onDelta={onColDelta} stickyLeft={editMode ? 24 : 0} />
               {/* 2 — Location Code */}
-              <LBSHeaderCell label="Location Code" style={{ width: colWidths.code }}      editMode={editMode} colKey="code"      onDelta={onColDelta} />
+              <LBSHeaderCell label="Location Code" style={{ width: colWidths.code }}      editMode={editMode} colKey="code"      onDelta={onColDelta} devAnchor="lbs-location-code" />
               {/* 3 — Full Code header with separator picker (edit mode only) */}
               <div style={{ position: 'relative', width: colWidths.fullCode, flexShrink: 0, display: 'flex', alignItems: 'center', height: '100%', paddingLeft: 12, paddingRight: 10, gap: 8, background: '#FAFAFA', overflow: 'clip' }}>
                 <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857', whiteSpace: 'nowrap', flex: 1 }}>
-                  Full Code
+                  <span data-dev-anchor="lbs-full-code">Full Code</span>
                 </span>
                 {editMode && <SeparatorDropdown value={separator} onChange={setSeparator} />}
                 <ColResizeHandle colKey="fullCode" onDelta={onColDelta} cellHovered={false} />
@@ -4952,10 +4975,10 @@ export function LocationBreakdownStructure() {
               {/* 5 — Elevation — fixed resizable in edit, fixed at colWidths value in view */}
               <LBSHeaderCell label="Elevation (ft-in)" style={{ width: colWidths.elevation }} editMode={editMode} colKey={editMode ? "elevation" : undefined} onDelta={editMode ? onColDelta : undefined} />
               {/* 6 — Vertical Segments — flex-fill in both modes (takes all remaining space before sticky Actions) */}
-              <LBSHeaderCell label="Vertical Segments" fillFlex editMode={editMode} showInfoTooltip />
+              <LBSHeaderCell label="Vertical Segments" fillFlex editMode={editMode} showInfoTooltip devAnchor="lbs-vertical-segments" />
               {editMode && (
                 <div style={{ width: COL_ACTIONS, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F5F5', paddingLeft: 4, position: 'sticky', right: 0, zIndex: 22, boxShadow: '-1px 0 0 0 #E5E7EB, -4px 0 10px rgba(0,0,0,0.06)' }}>
-                  <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Actions</span>
+                  <span data-dev-anchor="lbs-edit-actions" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, color: '#384857' }}>Actions</span>
                 </div>
               )}
             </div>
@@ -5012,7 +5035,7 @@ export function LocationBreakdownStructure() {
         {/* ── End scrollable area */}
 
         {/* ── Push Side Panel — slides in from the right, pushes MainCanvas left */}
-        <div style={{
+        <div data-dev-anchor={editMode && vsPanelItemId ? 'lbs-vs-side-panel' : undefined} style={{
           width: editMode && vsPanelItemId ? 370 : 0,
           flexShrink: 0,
           overflow: 'hidden',

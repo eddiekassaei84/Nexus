@@ -10,6 +10,8 @@ interface ProfileDropdownProps {
   onClose: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
   triggerRef: React.RefObject<HTMLElement | null>;
+  devModeEnabled?: boolean;
+  onDevModeChange?: (enabled: boolean) => void;
   onSignOut?: () => void;
 }
 
@@ -112,7 +114,7 @@ function RemovePhotoModal({
   );
 }
 
-export function ProfileDropdown({ isOpen, onClose, anchorRef, triggerRef, onSignOut }: ProfileDropdownProps) {
+export function ProfileDropdown({ isOpen, onClose, anchorRef, triggerRef, devModeEnabled = false, onDevModeChange, onSignOut }: ProfileDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Avatar state
@@ -338,6 +340,61 @@ export function ProfileDropdown({ isOpen, onClose, anchorRef, triggerRef, onSign
               Manage your Blade Account
             </button>
           </div>
+        </div>
+
+        {/* ── Dev Mode row ────────────────────────────────────────────────── */}
+        <div style={{
+          height: 48,
+          background: '#FFFFFF',
+          borderTop: '1px solid #C3C7CC',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 18px',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#616D79" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="m10 9-3 3 3 3" />
+              <path d="m14 15 3-3-3-3" />
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+            </svg>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 500, lineHeight: '20px', color: '#616D79' }}>
+              Dev Mode
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={devModeEnabled}
+            onClick={() => onDevModeChange?.(!devModeEnabled)}
+            style={{
+              width: 42,
+              height: 24,
+              borderRadius: 999,
+              border: 'none',
+              background: devModeEnabled ? '#243746' : '#D9D9D9',
+              cursor: 'pointer',
+              padding: 2,
+              position: 'relative',
+              transition: 'background 0.18s',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: devModeEnabled ? 21 : 3,
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
+                transition: 'left 0.18s',
+              }}
+            />
+          </button>
         </div>
 
         {/* ── Sign out row ────────────────────────────────────────────────── */}

@@ -1717,8 +1717,7 @@ export function RolesTable() {
                   style={{ display: 'flex', alignItems: 'stretch', height: currentRowH, background: isChildHovered ? '#F9FAFB' : idx % 2 === 0 ? 'white' : '#FAFAFA', borderBottom: '1px solid #D9D9D9', transition: 'background 0.1s' }}
                 >
                   <DragHandle onMouseDown={e => onHandleMouseDown(e, { type: 'child', groupId: child.groupId, childId: child.id, label: child.name || 'Untitled Role' })} />
-                  <div style={{ width: colWidths.name, flexShrink: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, gap: 6, paddingLeft: 12, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
-                    <span title="Required" style={{ color: '#FF4D4F', fontSize: 13, lineHeight: 1, flexShrink: 0, alignSelf: 'center' }}>*</span>
+                  <div style={{ width: colWidths.name, flexShrink: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 12, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
                     <EditInput value={child.name} onChange={v => updC(child.groupId, child.id, 'name', v)} placeholder="Role name"
                       error={editErrors.has(`c_${child.groupId}_${child.id}_name`)}
                       errorMessage={editErrors.get(`c_${child.groupId}_${child.id}_name`)} />
@@ -1827,8 +1826,7 @@ export function RolesTable() {
                       <DragHandle onMouseDown={e => onHandleMouseDown(e, { type: 'child', groupId: child.groupId, childId: child.id, label: child.name || 'Untitled Role' })} />
 
                       {/* Role Name */}
-                      <div style={{ ...cellBase(colWidths.name), alignItems: cellAlign, paddingTop: cellPadTop, gap: 6, paddingLeft: 4 + CHILD_INDENT, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
-                        <span title="Required" style={{ color: '#FF4D4F', fontSize: 13, lineHeight: 1, flexShrink: 0, alignSelf: 'center' }}>*</span>
+                      <div style={{ ...cellBase(colWidths.name), alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 4 + CHILD_INDENT, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
                         <EditInput
                           value={child.name}
                           onChange={v => updC(child.groupId, child.id, 'name', v)}

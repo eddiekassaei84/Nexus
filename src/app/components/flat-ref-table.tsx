@@ -72,12 +72,40 @@ function uid() { return `frt_${Date.now()}_${++_uid}`; }
 // ─── Validation ───────────────────────────────────────────────────────────────
 function computeErrors(groups: FlatGroup[]): Map<string, string> {
   const m = new Map<string, string>();
+  const allNames = new Map<string, string[]>();
+  const allCodes = new Map<string, string[]>();
+
   groups.forEach(g => {
-    if (!g.name.trim()) m.set(`${g.id}_name`, 'Name required');
-    if (!g.code.trim()) m.set(`${g.id}_code`, 'Code required');
+    const gn = g.name.trim().toLowerCase();
+    const gc = g.code.trim().toLowerCase();
+    if (gn) allNames.set(gn, [...(allNames.get(gn) ?? []), g.id]);
+    if (gc) allCodes.set(gc, [...(allCodes.get(gc) ?? []), g.id]);
     g.children.forEach(c => {
-      if (!c.name.trim()) m.set(`${c.id}_name`, 'Name required');
-      if (!c.code.trim()) m.set(`${c.id}_code`, 'Code required');
+      const cn = c.name.trim().toLowerCase();
+      const cc = c.code.trim().toLowerCase();
+      if (cn) allNames.set(cn, [...(allNames.get(cn) ?? []), c.id]);
+      if (cc) allCodes.set(cc, [...(allCodes.get(cc) ?? []), c.id]);
+    });
+  });
+
+  groups.forEach(g => {
+    const name = g.name.trim();
+    const code = g.code.trim();
+    if (!name) m.set(`${g.id}_name`, 'Title is required');
+    else if ((allNames.get(name.toLowerCase()) ?? []).length > 1)
+      m.set(`${g.id}_name`, `"${name}" is already used`);
+    if (!code) m.set(`${g.id}_code`, 'Code is required');
+    else if ((allCodes.get(code.toLowerCase()) ?? []).length > 1)
+      m.set(`${g.id}_code`, `"${code}" is already used`);
+    g.children.forEach(c => {
+      const childName = c.name.trim();
+      const childCode = c.code.trim();
+      if (!childName) m.set(`${c.id}_name`, 'Title is required');
+      else if ((allNames.get(childName.toLowerCase()) ?? []).length > 1)
+        m.set(`${c.id}_name`, `"${childName}" is already used`);
+      if (!childCode) m.set(`${c.id}_code`, 'Code is required');
+      else if ((allCodes.get(childCode.toLowerCase()) ?? []).length > 1)
+        m.set(`${c.id}_code`, `"${childCode}" is already used`);
     });
   });
   return m;
@@ -143,8 +171,8 @@ function ColHeader({ label, sortKey, sortState, onSort, style }: {
 }
 
 // ─── Editable input — matches DisciplineTable's EditInput exactly ────────────
-function EditInput({ value, onChange, placeholder, hasError }: {
-  value: string; onChange: (v: string) => void; placeholder?: string; hasError?: boolean;
+function EditInput({ value, onChange, placeholder, hasError, errorMessage }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; hasError?: boolean; errorMessage?: string;
 }) {
   const [focused,  setFocused]  = useState(false);
   const [hovering, setHovering] = useState(false);
@@ -168,6 +196,11 @@ function EditInput({ value, onChange, placeholder, hasError }: {
             <path d="M7 3.5v3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
             <circle cx="7" cy="9.5" r="0.75" fill="white" />
           </svg>
+        </div>
+      )}
+      {hasError && errorMessage && (
+        <div style={{ position: 'absolute', top: 34, left: 0, right: 0, zIndex: 10, fontFamily: 'Open Sans, sans-serif', fontSize: 11, color: '#FF4D4F', lineHeight: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', pointerEvents: 'none' }}>
+          {errorMessage}
         </div>
       )}
     </div>
@@ -525,6 +558,8 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
             const isDraggingThis = draggingId === g.id;
             const dropBefore = dropTarget?.type === 'group' && dropTarget.groupId === g.id && dropTarget.pos === 'before';
             const dropAfter  = dropTarget?.type === 'group' && dropTarget.groupId === g.id && dropTarget.pos === 'after';
+            const groupNameError = editErrors.get(`${g.id}_name`);
+            const groupCodeError = editErrors.get(`${g.id}_code`);
             return (
               <React.Fragment key={g.id}>
                 <DropLine visible={dropBefore} />
@@ -536,16 +571,16 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
                   <DragHandleEdit onMouseDown={e => onHandleMouseDown(e, { type: 'group', groupId: g.id, label: g.name || `New ${groupLabel}` })} />
 
                   {/* Name: FIXED 480px, paddingLeft:4, gap:6, chevron+input — same as D&T */}
-                  <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 4, paddingRight: 8, gap: 6, overflow: 'hidden' }}>
+                  <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 4, paddingRight: 8, gap: 6, overflow: groupNameError ? 'visible' : 'hidden', position: 'relative', zIndex: groupNameError ? 2 : undefined }}>
                     <button onClick={() => toggleExpand(g.id)} style={{ background: 'none', border: 'none', padding: 0, display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
                       <ChevronEditIcon expanded={isExpanded} />
                     </button>
-                    <EditInput value={g.name} onChange={v => patchGroup(g.id, { name: v })} placeholder={`${groupLabel} name`} hasError={!!editErrors.get(`${g.id}_name`)} />
+                    <EditInput value={g.name} onChange={v => patchGroup(g.id, { name: v })} placeholder={`${groupLabel} title`} hasError={!!groupNameError} errorMessage={groupNameError} />
                   </div>
 
                   {/* Code: FIXED 120px */}
-                  <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                    <EditInput value={g.code} onChange={v => patchGroup(g.id, { code: v })} placeholder="CODE" hasError={!!editErrors.get(`${g.id}_code`)} />
+                  <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8, overflow: groupCodeError ? 'visible' : 'hidden', position: 'relative', zIndex: groupCodeError ? 2 : undefined }}>
+                    <EditInput value={g.code} onChange={v => patchGroup(g.id, { code: v })} placeholder="CODE" hasError={!!groupCodeError} errorMessage={groupCodeError} />
                   </div>
 
                   {/* Type: FIXED 110px */}
@@ -566,6 +601,8 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
                   const isDragChild = draggingId === c.id;
                   const dropCB = dropTarget?.type === 'child' && dropTarget.groupId === g.id && dropTarget.childId === c.id && dropTarget.pos === 'before';
                   const dropCA = dropTarget?.type === 'child' && dropTarget.groupId === g.id && dropTarget.childId === c.id && dropTarget.pos === 'after';
+                  const childNameError = editErrors.get(`${c.id}_name`);
+                  const childCodeError = editErrors.get(`${c.id}_code`);
                   return (
                     <React.Fragment key={c.id}>
                       <DropLine visible={dropCB} />
@@ -577,13 +614,13 @@ export const FlatRefTable = forwardRef<FlatRefTableHandle, FlatRefTableProps>(fu
                         <DragHandleEdit onMouseDown={e => onHandleMouseDown(e, { type: 'child', groupId: g.id, childId: c.id, label: c.name || `New ${itemLabel}` })} />
 
                         {/* Name: FIXED 480px, paddingLeft:48px, no chevron — same as D&T trades */}
-                        <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: C_CHILD_INDENT, paddingRight: 8, overflow: 'hidden' }}>
-                          <EditInput value={c.name} onChange={v => patchItem(g.id, c.id, { name: v })} placeholder={`${itemLabel} name`} hasError={!!editErrors.get(`${c.id}_name`)} />
+                        <div style={{ width: C_NAME, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: C_CHILD_INDENT, paddingRight: 8, overflow: childNameError ? 'visible' : 'hidden', position: 'relative', zIndex: childNameError ? 2 : undefined }}>
+                          <EditInput value={c.name} onChange={v => patchItem(g.id, c.id, { name: v })} placeholder={`${itemLabel} title`} hasError={!!childNameError} errorMessage={childNameError} />
                         </div>
 
                         {/* Code: FIXED 120px */}
-                        <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                          <EditInput value={c.code} onChange={v => patchItem(g.id, c.id, { code: v })} placeholder="CODE" hasError={!!editErrors.get(`${c.id}_code`)} />
+                        <div style={{ width: C_CODE, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8, overflow: childCodeError ? 'visible' : 'hidden', position: 'relative', zIndex: childCodeError ? 2 : undefined }}>
+                          <EditInput value={c.code} onChange={v => patchItem(g.id, c.id, { code: v })} placeholder="CODE" hasError={!!childCodeError} errorMessage={childCodeError} />
                         </div>
 
                         {/* Type: FIXED 110px */}

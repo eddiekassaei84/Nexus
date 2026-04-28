@@ -29,6 +29,8 @@ import { AppsGridIcon, ModuleSelector } from './components/module-selector';
 import packageIconPaths from '../imports/svg-iy01c7yfrx';
 import { UserAccountLandingPage, LANDING_PROJECTS, LandingProject as NavProject } from './components/user-account-landing';
 import { ProfileDropdown } from './components/profile-dropdown';
+import { DevModeProvider, DevOverlayHost } from './components/dev-mode';
+import { devModeRegistry } from './dev-mode/dev-mode-registry';
 import ReactDOM from 'react-dom';
 import { GeneralInformationPage } from './components/general-information';
 import { FilesTable } from './components/files-table';
@@ -551,6 +553,8 @@ function TopNav({
   onNavigateToProject,
   onSelectModule,
   isLandingPage = false,
+  devModeEnabled = false,
+  onDevModeChange,
   onSignOut,
 }: {
   sidebarExpanded: boolean;
@@ -559,6 +563,8 @@ function TopNav({
   onNavigateToProject: () => void;
   onSelectModule: (id: string) => void;
   isLandingPage?: boolean;
+  devModeEnabled?: boolean;
+  onDevModeChange?: (enabled: boolean) => void;
   onSignOut?: () => void;
 }) {
   const [moduleSelectorOpen, setModuleSelectorOpen] = useState(false);
@@ -791,6 +797,8 @@ function TopNav({
           onClose={() => setProfileDropdownOpen(false)}
           anchorRef={avatarRef}
           triggerRef={avatarRef}
+          devModeEnabled={devModeEnabled}
+          onDevModeChange={onDevModeChange}
           onSignOut={onSignOut}
         />
       </div>
@@ -1560,6 +1568,7 @@ export default function App() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeNav, setActiveNav]             = useState('reference-data');
   const [currentView, setCurrentView]         = useState('project-settings');
+  const [devModeEnabled, setDevModeEnabled]   = useState(false);
   const [modalOpen, setModalOpen]             = useState(false);
   const [addedUsers, setAddedUsers]           = useState<DirectoryUser[]>([]);
 
@@ -1580,6 +1589,7 @@ export default function App() {
   const handleModuleSelect = (id: string) => { setCurrentView(id); };
 
   return (
+    <DevModeProvider enabled={devModeEnabled} onEnabledChange={setDevModeEnabled}>
     <ToastProvider>
       {!isLoggedIn && (
         <LoginPage
@@ -1638,6 +1648,8 @@ export default function App() {
           onNavigateHome={() => { setCurrentView('user-account-landing'); }}
           onNavigateToProject={() => { setCurrentView('home'); }}
           isLandingPage={currentView === 'user-account-landing'}
+          devModeEnabled={devModeEnabled}
+          onDevModeChange={setDevModeEnabled}
           onSelectModule={(id) => {
             setCurrentView(id);
             if (id === 'project-settings') setActiveNav('reference-data');
@@ -1672,6 +1684,10 @@ export default function App() {
             }}
           />
         </div>
+        <DevOverlayHost
+          pageKey={`${currentView}:${activeNav}`}
+          registry={devModeRegistry}
+        />
 
         {/* Add User Modal */}
         <AddUserModal
@@ -1683,5 +1699,6 @@ export default function App() {
       </div>
       )}
     </ToastProvider>
+    </DevModeProvider>
   );
 }
