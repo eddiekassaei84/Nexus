@@ -18,6 +18,9 @@ import buildingIconPaths from '../../imports/svg-e8zbubrltf';
 import exclPaths from '../../imports/svg-9duqae3uak';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
+const SHOW_LBS_TAB_CREATION = false;
+const SHOW_LBS_IMPORT_EXPORT = false;
+
 const LBS_TYPES = ['Zone Structure', 'Work Zones', 'Trade Zones', 'Logistics Zones', 'Phasing'] as const;
 type LBSType = typeof LBS_TYPES[number];
 
@@ -3336,8 +3339,12 @@ function VerticalZonesTable({ zones, setZones, levelNodes, allLbsNodes, tabs }: 
                 </>
               ) : (
                 <>
-                  <SecondaryBtn onClick={() => {}}><ImportIcon /><span>Import</span></SecondaryBtn>
-                  <SecondaryBtn onClick={() => {}}><ExportIcon /><span>Export</span></SecondaryBtn>
+                  {SHOW_LBS_IMPORT_EXPORT && (
+                    <>
+                      <SecondaryBtn onClick={() => {}}><ImportIcon /><span>Import</span></SecondaryBtn>
+                      <SecondaryBtn onClick={() => {}}><ExportIcon /><span>Export</span></SecondaryBtn>
+                    </>
+                  )}
                   <PrimaryEditBtn onClick={enterEdit} />
                 </>
               )}
@@ -4839,17 +4846,19 @@ export function LocationBreakdownStructure() {
           <VerticalZonesTabIcon color={activeView === 'vz' ? '#243746' : '#616D79'} />
           <span>Vertical Zones</span>
         </div>
-        {/* Add LBS tab */}
-        <button
-          onClick={() => !editMode && setCreateModalOpen(true)}
-          title="Create new LBS"
-          style={{ height: 44, width: 48, background: '#FAFAFA', border: '1px solid #F0F0F0', borderBottom: '1px solid #F0F0F0', borderRadius: '4px 4px 0 0', cursor: editMode ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: editMode ? 0.4 : 1 }}
-        >
-          <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-            <path d="M0 11H22" stroke="#FF4D00" strokeWidth="2" />
-            <path d={P_PLUS_VERTICAL} stroke="#FF4D00" strokeWidth="2" />
-          </svg>
-        </button>
+        {/* Add LBS tab — hidden for the current release scope, preserved for future scope. */}
+        {SHOW_LBS_TAB_CREATION && (
+          <button
+            onClick={() => !editMode && setCreateModalOpen(true)}
+            title="Create new LBS"
+            style={{ height: 44, width: 48, background: '#FAFAFA', border: '1px solid #F0F0F0', borderBottom: '1px solid #F0F0F0', borderRadius: '4px 4px 0 0', cursor: editMode ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: editMode ? 0.4 : 1 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+              <path d="M0 11H22" stroke="#FF4D00" strokeWidth="2" />
+              <path d={P_PLUS_VERTICAL} stroke="#FF4D00" strokeWidth="2" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* ── Vertical Zones View ───────────────────────────────────────────── */}
@@ -4932,11 +4941,15 @@ export function LocationBreakdownStructure() {
               </>
             ) : (
               <>
-                <button onClick={downloadTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-                  Download Import Template
-                </button>
-                <SecondaryBtn onClick={() => {}}><ImportIcon /><span>Import</span></SecondaryBtn>
-                <SecondaryBtn onClick={() => setExportModalOpen(true)}><ExportIcon /><span>Export</span></SecondaryBtn>
+                {SHOW_LBS_IMPORT_EXPORT && (
+                  <>
+                    <button onClick={downloadTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                      Download Import Template
+                    </button>
+                    <SecondaryBtn onClick={() => {}}><ImportIcon /><span>Import</span></SecondaryBtn>
+                    <SecondaryBtn onClick={() => setExportModalOpen(true)}><ExportIcon /><span>Export</span></SecondaryBtn>
+                  </>
+                )}
                 <PrimaryEditBtn onClick={enterEditMode} />
               </>
             )}

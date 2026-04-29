@@ -1005,7 +1005,9 @@ export function RolesTable() {
             </>
           ) : (
             <>
-              <button onClick={downloadRolesTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>Download Import Template</button>
+              <div data-dev-anchor="roles-import-sample">
+                <button onClick={downloadRolesTemplate} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#1890FF', textDecoration: 'underline', whiteSpace: 'nowrap' }}>Download Import Template</button>
+              </div>
               <SecondaryButton onClick={() => setExportOpen(true)}><ExportIcon /><span>Export</span></SecondaryButton>
               <PrimaryEditButton onClick={enterEditMode} />
             </>

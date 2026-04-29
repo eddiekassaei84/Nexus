@@ -32,6 +32,12 @@ When the permissions matrix cannot find a saved permission record for a role, th
 - Use the first valid minimum when \`none\` is not applicable.
 - In the current prototype, Home cannot use \`none\`, so it falls back to \`read-only\`.
 
+Explicit fallback for a role with no saved permission record:
+
+- Home: \`read-only\`
+- Files: \`none\` in the UI, or technically \`null\`/missing permission data in storage before fallback is applied.
+- Settings: \`none\` in the UI, or technically \`null\`/missing permission data in storage before fallback is applied.
+
 This prevents blank permission states and keeps custom or newly imported roles from accidentally inheriting elevated access.
 
 ## Import and Custom Role Behavior
@@ -88,6 +94,19 @@ export const rolesDevContent: DevPageContent = {
         </span>
       ),
     },
+    {
+      id: 'roles-import-sample-file',
+      anchor: 'roles-import-sample',
+      mode: 'view',
+      layerId: 'notes',
+      placement: 'bottom',
+      title: 'Guidance Marker: Verify The New Roles Import Sample',
+      body: (
+        <span>
+          The current role import sample is the newly uploaded <strong>Roles_Import_Sample.xlsx</strong>. Dev should download this file, try importing it, verify the flat role list imports correctly, and make sure the production product includes this exact sample file.
+        </span>
+      ),
+    },
   ],
 };
 
@@ -103,7 +122,7 @@ export const rolePermissionsDevContent: DevPageContent = {
       title: 'Guidance Marker: Non-Elevating Permission Fallback',
       body: (
         <span>
-          If a role has no saved permission record, the matrix falls back to the minimum valid access per app. Missing permissions should never grant edit or admin access.
+          If a role has no saved permission record, the matrix falls back to Home = Read Only, Files = None, and Settings = None. Missing permissions should never grant edit or admin access.
         </span>
       ),
     },
@@ -116,7 +135,7 @@ export const rolePermissionsDevContent: DevPageContent = {
       title: 'Guidance Marker: Role Selection Drives The Matrix',
       body: (
         <span>
-          The selected role controls which permission record is read. New or imported roles should display fallback permissions until explicit access is saved.
+          The selected role controls which permission record is read. New or imported roles with no saved permissions should display Home as Read Only and Files/Settings as None until explicit access is saved.
         </span>
       ),
     },
@@ -129,7 +148,7 @@ export const rolePermissionsDevContent: DevPageContent = {
       title: 'Guidance Marker: Fallback Uses Minimum Valid Access',
       body: (
         <span>
-          App-specific not-applicable rules still apply. For example, Home cannot use None, so a missing permission record falls back to Read Only for Home.
+          App-specific not-applicable rules still apply. Home cannot use None, so missing permission data falls back to Read Only. Files and Settings can use None, so missing data falls back to None.
         </span>
       ),
     },

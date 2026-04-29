@@ -29,6 +29,12 @@ When the permissions matrix cannot find a saved permission record for a role, th
 - Use the first valid minimum when `none` is not applicable.
 - In the current prototype, Home cannot use `none`, so it falls back to `read-only`.
 
+Explicit fallback for a role with no saved permission record:
+
+- Home: `read-only`
+- Files: `none` in the UI, or technically `null`/missing permission data in storage before fallback is applied.
+- Settings: `none` in the UI, or technically `null`/missing permission data in storage before fallback is applied.
+
 This prevents blank permission states and keeps custom or newly imported roles from accidentally inheriting elevated access.
 
 ## Import and Custom Role Behavior
