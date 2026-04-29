@@ -4818,6 +4818,7 @@ export function LocationBreakdownStructure() {
         ))}
         {/* Vertical Zones fixed tab */}
         <div
+          data-dev-anchor="lbs-vertical-zones-tab"
           onClick={() => !editMode && setActiveView('vz')}
           style={{
             position: 'relative', height: 44,

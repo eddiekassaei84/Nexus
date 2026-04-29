@@ -3,14 +3,10 @@ import ReactDOM from 'react-dom';
 import { ImportRolesModal, downloadRolesTemplate } from './import-roles-modal';
 import { ExportRolesModal } from './export-roles-modal';
 import { INITIAL_USERS } from './users-table';
-import { TRADE_ITEMS } from './reference-data-table';
 import svgPaths from '../../imports/svg-hvnufn483u';
 import plusPaths from '../../imports/svg-y2rd7nmj2z';
 import trashPaths from '../../imports/svg-fjqvq36uqo';
 // siblingPaths import removed — AddSibling button removed from UI
-import childPaths from '../../imports/svg-p3h938sv9m';
-import chevronDownPaths from '../../imports/svg-0ujzuiicjd';
-import chevronRightPaths from '../../imports/svg-kphlmu302k';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type RoleSortKey = 'name' | 'code' | 'description' | 'active';
@@ -19,22 +15,16 @@ interface RoleSortState { key: RoleSortKey; dir: RoleSortDir }
 
 interface RoleChild {
   id: string; name: string; code: string; description: string; active: boolean;
-  trade: string | null; // trade ID from TRADE_ITEMS (e.g. 't-gc'), null = unassigned
+  trade: string | null;
 }
 interface RoleGroup {
   id: string; name: string; code: string; description: string; active: boolean; children: RoleChild[];
 }
 
-// DragItem carries the label for the floating preview
-type DragItem =
-  | { type: 'group'; groupId: string; label: string }
-  | { type: 'child'; groupId: string; childId: string; label: string };
+// DragItem carries the label for the floating preview.
+type DragItem = { type: 'child'; groupId: string; childId: string; label: string };
 
-type DropTarget =
-  | { type: 'group';           groupId: string; pos: 'before' | 'after' }
-  | { type: 'child';           groupId: string; childId: string; pos: 'before' | 'after' }
-  | { type: 'group-end';       groupId: string }
-  | { type: 'trade-group-end'; tradeId: string };
+type DropTarget = { type: 'child'; groupId: string; childId: string; pos: 'before' | 'after' };
 
 // ─── ID generator ─────────────────────────────────────────────────────────────
 let _uid = 0;
@@ -125,7 +115,7 @@ function findDropTarget(x: number, y: number, dragItem: DragItem): DropTarget | 
     }
     if (!rowEl) continue;
 
-    const rowType = rowEl.getAttribute('data-row-type') as 'group' | 'child' | 'trade-group' | null;
+    const rowType = rowEl.getAttribute('data-row-type') as 'child' | null;
     const rowId   = rowEl.getAttribute('data-row-id');
     const gId     = rowEl.getAttribute('data-group-id') || rowId;
     if (!rowType || !rowId || !gId) continue;
@@ -133,24 +123,9 @@ function findDropTarget(x: number, y: number, dragItem: DragItem): DropTarget | 
     const rect = rowEl.getBoundingClientRect();
     const pos: 'before' | 'after' = y < rect.top + rect.height / 2 ? 'before' : 'after';
 
-    if (dragItem.type === 'group') {
-      if (rowType !== 'group') return null;
-      if (rowId === dragItem.groupId) return null;
-      return { type: 'group', groupId: rowId, pos };
-    }
-
-    if (dragItem.type === 'child') {
-      // Dropping onto a trade group header → change trade assignment
-      if (rowType === 'trade-group') {
-        return { type: 'trade-group-end', tradeId: rowId };
-      }
-      if (rowType === 'group') {
-        return { type: 'group-end', groupId: rowId };
-      }
-      if (rowType === 'child') {
-        if (rowId === dragItem.childId) return null;
-        return { type: 'child', groupId: gId, childId: rowId, pos };
-      }
+    if (rowType === 'child') {
+      if (rowId === dragItem.childId) return null;
+      return { type: 'child', groupId: gId, childId: rowId, pos };
     }
     return null;
   }
@@ -244,31 +219,6 @@ function TrashIcon({ color = '#616D79' }: { color?: string }) {
   );
 }
 
-function AddChildIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ transform: 'rotate(90deg)' }}>
-      <path clipRule="evenodd" d={childPaths.p247db800} fill="#384857" fillRule="evenodd" />
-      <path d={childPaths.pbf71000} fill="#FF6425" />
-    </svg>
-  );
-}
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      width="18" height="18" viewBox="0 0 18 18" fill="none"
-      style={{ flexShrink: 0 }}
-    >
-      {expanded ? (
-        /* Chevron-down frame — SVG path apex sits at top (▲ natively), rotate 180° around centre → ▼ */
-        <path d={chevronDownPaths.p1d4b7280} fill="#384857" transform="rotate(180 9 9)" />
-      ) : (
-        /* Chevron-right frame — SVG path apex sits at left (◄ natively), rotate 180° around centre → ► */
-        <path d={chevronRightPaths.p1d644480} fill="#384857" transform="rotate(180 9 9)" />
-      )}
-    </svg>
-  );
-}
-
 // ─── Edit validation ──────────────────────────────────────────────────────────
 function computeEditErrors(groups: RoleGroup[]): Map<string, string> {
   const errors = new Map<string, string>();
@@ -298,10 +248,6 @@ function computeEditErrors(groups: RoleGroup[]): Map<string, string> {
 
   // ── Validate ──────────────────────────────────────────────────────────────
   for (const g of groups) {
-    if (!g.name.trim()) {
-      errors.set(`g_${g.id}_name`, 'Group Name is required');
-    }
-
     for (const c of g.children) {
       const nameTrimmed = c.name.trim();
       const codeTrimmed = c.code.trim();
@@ -312,16 +258,9 @@ function computeEditErrors(groups: RoleGroup[]): Map<string, string> {
       } else if (nameTrimmed.length < 3) {
         errors.set(`c_${g.id}_${c.id}_name`, 'Role Name must be at least 3 characters');
       } else {
-        // Same as parent group name
-        if (g.name.trim() && nameTrimmed.toLowerCase() === g.name.trim().toLowerCase()) {
-          errors.set(`c_${g.id}_${c.id}_name`, `Role Name cannot be the same as its Group Name ("${g.name}")`);
-        }
-        // Duplicate across all roles
-        else {
-          const dupes = nameCount.get(nameTrimmed.toLowerCase()) ?? [];
-          if (dupes.length > 1) {
-            errors.set(`c_${g.id}_${c.id}_name`, `Role Name "${c.name.trim()}" is already used by another role, names must be unique`);
-          }
+        const dupes = nameCount.get(nameTrimmed.toLowerCase()) ?? [];
+        if (dupes.length > 1) {
+          errors.set(`c_${g.id}_${c.id}_name`, `Role Name "${c.name.trim()}" is already used by another role, names must be unique`);
         }
       }
 
@@ -359,7 +298,6 @@ function ValidationBanner({ count }: { count: number }) {
 
 // ─── Floating drag preview (portal) ───────────────────────────────────────────
 function DragPreview({ x, y, item }: { x: number; y: number; item: DragItem }) {
-  const isGroup = item.type === 'group';
   return ReactDOM.createPortal(
     <div style={{
       position: 'fixed', left: 0, top: 0,
@@ -367,7 +305,7 @@ function DragPreview({ x, y, item }: { x: number; y: number; item: DragItem }) {
       pointerEvents: 'none', zIndex: 9999,
       background: 'white',
       border: '1px solid #D0D5DD',
-      borderLeft: `4px solid ${isGroup ? '#FF4D00' : '#243746'}`,
+      borderLeft: '4px solid #243746',
       borderRadius: 4,
       padding: '0 12px',
       height: 44,
@@ -381,19 +319,19 @@ function DragPreview({ x, y, item }: { x: number; y: number; item: DragItem }) {
       <span style={{
         fontFamily: 'Open Sans, sans-serif', fontSize: 13,
         color: '#1D2939',
-        fontWeight: isGroup ? 600 : 400,
+        fontWeight: 400,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
         {item.label}
       </span>
       <span style={{
         fontFamily: 'Open Sans, sans-serif', fontSize: 11,
-        background: isGroup ? '#FFEDE4' : '#F0F2F5',
-        color: isGroup ? '#FF4D00' : '#384857',
+        background: '#F0F2F5',
+        color: '#384857',
         borderRadius: 2, padding: '1px 5px', flexShrink: 0,
         fontWeight: 500,
       }}>
-        {isGroup ? 'Group' : 'Role'}
+        Role
       </span>
     </div>,
     document.body
@@ -595,171 +533,14 @@ function DragHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => voi
 
 // ─── Column constants ─────────────────────────────────────────────────────────
 const COL_DRAG      = 28;
-const COL_ROLE_NAME = 240; // slightly narrower in edit to accommodate Trade col
+const COL_ROLE_NAME = 300;
 const COL_ROLE_NAME_VIEW = 300; // full width in view mode
 const COL_CODE      = 100;
-const COL_TRADE     = 210; // trade dropdown column (edit mode only)
 const COL_ACTIONS   = 160;
 const HEADER_H         = 44;
 const ROW_H            = 48;
 const EDIT_ROW_H_BASE  = 48;  // edit-mode default row height (matches view mode)
 const EDIT_ROW_H_ERROR = 62;  // edit-mode row height when any field has a validation error — expands downward only
-const CHILD_INDENT     = 28;
-
-// ─── Trade lookup helpers ───���──────────────────────────────────────────────────
-function tradeById(id: string | null) {
-  return id ? TRADE_ITEMS.find(t => t.id === id) ?? null : null;
-}
-
-// ─── Trade Dropdown — §16.8 inline searchable dropdown for edit mode ──────────
-function TradeDropdown({ value, onChange }: {
-  value: string | null;
-  onChange: (id: string | null) => void;
-}) {
-  const [open, setOpen]     = useState(false);
-  const [query, setQuery]   = useState('');
-  const triggerRef          = useRef<HTMLDivElement>(null);
-  const menuRef             = useRef<HTMLDivElement>(null);
-  const inputRef            = useRef<HTMLInputElement>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
-
-  const selectedTrade = tradeById(value);
-
-  const filteredTrades = useMemo(() => {
-    if (!query || query.length < 2) return TRADE_ITEMS;
-    const q = query.toLowerCase();
-    return TRADE_ITEMS.filter(t => t.name.toLowerCase().includes(q) || t.code.toLowerCase().includes(q));
-  }, [query]);
-
-  function openDropdown() {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
-    setOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 30);
-  }
-  function closeDropdown() { setOpen(false); setQuery(''); }
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (
-        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
-        menuRef.current   && !menuRef.current.contains(e.target as Node)
-      ) closeDropdown();
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
-
-  return (
-    <>
-      <div
-        ref={triggerRef}
-        onClick={open ? closeDropdown : openDropdown}
-        style={{
-          flex: 1, minWidth: 0, height: 32,
-          display: 'flex', alignItems: 'center', gap: 6,
-          border: `1px solid ${open ? '#91D5FF' : '#D0D5DD'}`,
-          borderRadius: 4, background: '#FFFFFF', cursor: 'pointer',
-          padding: '0 8px', overflow: 'hidden',
-          transition: 'border-color 0.15s',
-        }}
-      >
-        {open ? (
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onClick={e => e.stopPropagation()}
-            placeholder="Search trades…"
-            style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'Open Sans, sans-serif', fontSize: 13, color: '#344054', background: 'transparent', minWidth: 0 }}
-          />
-        ) : (
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Open Sans, sans-serif', fontSize: 13, color: selectedTrade ? '#344054' : '#9EA3A9' }}>
-            {selectedTrade ? selectedTrade.name : 'Select trade…'}
-          </span>
-        )}
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-          <path d="M1 1l4 4 4-4" stroke={open ? '#91D5FF' : '#9EA3A9'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-
-      {open && ReactDOM.createPortal(
-        <div
-          ref={menuRef}
-          style={{
-            position: 'absolute', top: menuPos.top, left: menuPos.left,
-            width: Math.max(menuPos.width, 260), maxHeight: 320, overflowY: 'auto',
-            background: '#FFFFFF', borderRadius: 4, zIndex: 9999,
-            boxShadow: '0 9px 28px 8px rgba(0,0,0,0.05), 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12)',
-            padding: '4px 0',
-          }}>
-          {/* — None — option: always visible, highlighted when no trade assigned */}
-          {(() => {
-            const isNoneSelected = value === null;
-            return (
-              <div
-                onClick={() => { onChange(null); closeDropdown(); }}
-                style={{
-                  height: 32, display: 'flex', alignItems: 'center', gap: 8,
-                  paddingLeft: isNoneSelected ? 9 : 12, paddingRight: 12,
-                  cursor: 'pointer',
-                  background: isNoneSelected ? '#E6F7FF' : 'transparent',
-                  borderLeft: isNoneSelected ? '3px solid #1890FF' : '3px solid transparent',
-                  fontFamily: 'Inter, sans-serif', fontSize: 13,
-                  fontWeight: isNoneSelected ? 600 : 400,
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => { if (!isNoneSelected) (e.currentTarget as HTMLElement).style.background = '#F5F5F5'; }}
-                onMouseLeave={e => { if (!isNoneSelected) (e.currentTarget as HTMLElement).style.background = isNoneSelected ? '#E6F7FF' : 'transparent'; }}
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, color: isNoneSelected ? '#1D2939' : '#8C8C8C', fontStyle: 'italic' }}>— None —</span>
-                {isNoneSelected && (
-                  <svg width="13" height="10" viewBox="0 0 13 10" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M1 5l4 4L12 1" stroke="#1890FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-            );
-          })()}
-          {/* Divider after None */}
-          <div style={{ height: 1, background: '#F0F0F0', margin: '4px 0' }} />
-          {filteredTrades.length === 0 ? (
-            <div style={{ padding: '8px 12px', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#9EA3A9' }}>No results found</div>
-          ) : filteredTrades.map(trade => {
-            const isSelected = value === trade.id;
-            return (
-              <div key={trade.id}
-                onClick={() => { onChange(trade.id); closeDropdown(); }}
-                style={{
-                  height: 32, display: 'flex', alignItems: 'center', gap: 8,
-                  paddingLeft: isSelected ? 9 : 12, paddingRight: 12,
-                  cursor: 'pointer',
-                  background: isSelected ? '#E6F7FF' : 'transparent',
-                  borderLeft: isSelected ? '3px solid #1890FF' : '3px solid transparent',
-                  fontFamily: 'Inter, sans-serif', fontSize: 13,
-                  fontWeight: isSelected ? 600 : 400,
-                  transition: 'background 0.1s',
-                  position: 'relative',
-                }}
-                onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#F5F5F5'; }}
-                onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, color: isSelected ? '#1D2939' : '#384857' }}>{trade.name}</span>
-                {isSelected && (
-                  <svg width="13" height="10" viewBox="0 0 13 10" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M1 5l4 4L12 1" stroke="#1890FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-            );
-          })}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
 
 // ─── Role In Use — blocking modal ────────────────────────────────────────────
 function RoleInUseModal({
@@ -860,6 +641,19 @@ function countAssignedMembers(roleNames: string[]): number {
   return INITIAL_USERS.filter(u => lower.includes(u.accessLevel.toLowerCase())).length;
 }
 
+function getAssignedRoleSummary(roleNames: string[]): { memberCount: number; roleNames: string[] } {
+  const lowerToName = new Map(roleNames.map(name => [name.toLowerCase(), name]));
+  const assigned = new Set<string>();
+  let memberCount = 0;
+  for (const user of INITIAL_USERS) {
+    const roleName = lowerToName.get(user.accessLevel.toLowerCase());
+    if (!roleName) continue;
+    memberCount += 1;
+    assigned.add(roleName);
+  }
+  return { memberCount, roleNames: Array.from(assigned).sort((a, b) => a.localeCompare(b)) };
+}
+
 // ─── Main component ─────────��─────────────────────────────────────────────────
 export function RolesTable() {
   // ── Data ──────────────────────────────────────────────────────────────────
@@ -868,12 +662,6 @@ export function RolesTable() {
   // ── View state ────────────────────────────────────────────────────────────
   const [search,     setSearch]     = useState('');
   const [sortState,  setSortState]  = useState<RoleSortState | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(() => {
-    // Default: expand all trade groups visible in view mode
-    const keys = new Set<string>();
-    ROLES_DATA.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-    return keys;
-  });
   const [activeMap,  setActiveMap]  = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {};
     ROLES_DATA.forEach(g => { m[g.id] = g.active; g.children.forEach(c => { m[c.id] = c.active; }); });
@@ -884,11 +672,10 @@ export function RolesTable() {
     nameView: COL_ROLE_NAME_VIEW,
     name:     COL_ROLE_NAME,
     code:     COL_CODE,
-    trade:    COL_TRADE,
   });
   function onColDelta(key: string, delta: number) {
     setColWidths(prev => {
-      const minW = key === 'code' ? 72 : key === 'trade' ? 100 : 120;
+      const minW = key === 'code' ? 72 : 120;
       return { ...prev, [key]: Math.max(minW, (prev as Record<string, number>)[key] + delta) };
     });
   }
@@ -897,6 +684,7 @@ export function RolesTable() {
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [restoreBlockedModal, setRestoreBlockedModal] = useState<{ memberCount: number; roleNames: string[] } | null>(null);
 
   // ── Role-in-use blocking modal ────────────────────────────────────────────
   const [roleInUseModal, setRoleInUseModal] = useState<{ roleName: string; memberCount: number } | null>(null);
@@ -904,7 +692,6 @@ export function RolesTable() {
   // ── Edit state ────────────────────────────────────────────────────────────
   const [editMode,    setEditMode]    = useState(false);
   const [editGroups,  setEditGroups]  = useState<RoleGroup[]>([]);
-  const [groupByTrade, setGroupByTrade] = useState(true);
   const [validationAttempted, setValidationAttempted] = useState(false);
 
   // ── Scroll ref for the table body ────────────────────────────────────────
@@ -917,15 +704,12 @@ export function RolesTable() {
   const editGroupsRef  = useRef(editGroups);
   const liveDataRef    = useRef(liveData);
   const editModeRef    = useRef(editMode);
-  const expandedRef    = useRef(expanded);
-  const prevExpandedRef = useRef<Set<string> | null>(null); // saved before group collapse
   const rafRef         = useRef<number | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { editGroupsRef.current = editGroups; }, [editGroups]);
   useEffect(() => { liveDataRef.current   = liveData;   }, [liveData]);
   useEffect(() => { editModeRef.current   = editMode;   }, [editMode]);
-  useEffect(() => { expandedRef.current   = expanded;   }, [expanded]);
 
   // State: triggers re-renders for visual feedback
   const [isDragging,  setIsDragging]  = useState(false);
@@ -947,72 +731,23 @@ export function RolesTable() {
     const isEdit = editModeRef.current;
     const data: RoleGroup[] = JSON.parse(JSON.stringify(isEdit ? editGroupsRef.current : liveDataRef.current));
 
-    if (item.type === 'group' && target.type === 'group') {
-      const fromIdx = data.findIndex(g => g.id === item.groupId);
-      const [removed] = data.splice(fromIdx, 1);
-      const toIdx = data.findIndex(g => g.id === target.groupId);
-      data.splice(target.pos === 'before' ? toIdx : toIdx + 1, 0, removed);
-      prevExpandedRef.current = null; // keep collapsed after reorder
-      if (isEdit) setEditGroups(data); else setLiveData(data);
-
-    } else if (item.type === 'child') {
-      if (target.type === 'trade-group-end') {
-        // Edit-mode: update trade field in-place; role stays in its role group
-        for (const g of data) {
-          const child = g.children.find(c => c.id === item.childId);
-          if (child) {
-            child.trade = target.tradeId === '__unassigned__' ? null : target.tradeId;
-            break;
-          }
-        }
-        // Auto-expand the target trade group so user sees the result
-        setExpanded(prev => new Set([...prev, target.tradeId]));
-        if (isEdit) setEditGroups(data); else setLiveData(data);
-        return;
+    let removed: RoleChild | null = null;
+    for (const g of data) {
+      if (g.id === item.groupId) {
+        const idx = g.children.findIndex(c => c.id === item.childId);
+        if (idx >= 0) { [removed] = g.children.splice(idx, 1); break; }
       }
-
-      // In edit mode, dropping a child onto another child = change trade to match target child's trade
-      if (isEdit && target.type === 'child') {
-        let targetTrade: string | null = null;
-        for (const g of data) {
-          const tc = g.children.find(c => c.id === target.childId);
-          if (tc) { targetTrade = tc.trade; break; }
-        }
-        for (const g of data) {
-          const src = g.children.find(c => c.id === item.childId);
-          if (src) { src.trade = targetTrade; break; }
-        }
-        if (targetTrade) setExpanded(prev => new Set([...prev, targetTrade!]));
-        setEditGroups(data);
-        return;
-      }
-
-      // View mode: physically reorder child across role groups
-      let removed: RoleChild | null = null;
-      for (const g of data) {
-        if (g.id === item.groupId) {
-          const idx = g.children.findIndex(c => c.id === item.childId);
-          if (idx >= 0) { [removed] = g.children.splice(idx, 1); break; }
-        }
-      }
-      if (!removed) return;
-
-      if (target.type === 'child') {
-        for (const g of data) {
-          if (g.id === target.groupId) {
-            const toIdx = g.children.findIndex(c => c.id === target.childId);
-            g.children.splice(target.pos === 'before' ? toIdx : toIdx + 1, 0, removed);
-            break;
-          }
-        }
-      } else if (target.type === 'group-end') {
-        for (const g of data) {
-          if (g.id === target.groupId) { g.children.push(removed); break; }
-        }
-        setExpanded(prev => new Set([...prev, target.groupId]));
-      }
-      if (isEdit) setEditGroups(data); else setLiveData(data);
     }
+    if (!removed) return;
+
+    for (const g of data) {
+      if (g.id === target.groupId) {
+        const toIdx = g.children.findIndex(c => c.id === target.childId);
+        g.children.splice(target.pos === 'before' ? toIdx : toIdx + 1, 0, removed);
+        break;
+      }
+    }
+    if (isEdit) setEditGroups(data); else setLiveData(data);
   }
 
   // ── Mouse down on drag handle ─────────────────────────────────────────────
@@ -1031,13 +766,7 @@ export function RolesTable() {
         if (d < 5) return;
         started = true;
         setIsDragging(true);
-        setDraggingId(item.type === 'group' ? item.groupId : item.childId);
-
-        // Tier 1: collapse all so user sees the group order clearly
-        if (item.type === 'group') {
-          prevExpandedRef.current = new Set(expandedRef.current);
-          setExpanded(new Set());
-        }
+        setDraggingId(item.childId);
       }
 
       // Throttle state updates with RAF for smooth preview
@@ -1057,10 +786,6 @@ export function RolesTable() {
 
       if (started && dropTargetRef.current) {
         performDrop(dropTargetRef.current);
-      } else if (started && item.type === 'group' && prevExpandedRef.current) {
-        // Cancelled group drag → restore expanded state
-        setExpanded(prevExpandedRef.current);
-        prevExpandedRef.current = null;
       }
 
       dragItemRef.current  = null;
@@ -1075,27 +800,6 @@ export function RolesTable() {
     document.addEventListener('mouseup', onUp);
   }
 
-  // ── Drop indicator helpers ────────────────────────────────────────────────
-  function groupIndicator(groupId: string): React.CSSProperties {
-    if (!dropTarget) return {};
-    if (dropTarget.type === 'group' && dropTarget.groupId === groupId) {
-      return { boxShadow: dropTarget.pos === 'before' ? 'inset 0 2px 0 0 #4D7CFE' : 'inset 0 -2px 0 0 #4D7CFE' };
-    }
-    if (dropTarget.type === 'group-end' && dropTarget.groupId === groupId) {
-      // Highlight whole group header to show "drop here to add"
-      return { boxShadow: 'inset 0 0 0 2px #4D7CFE', background: '#EBF3FF' };
-    }
-    return {};
-  }
-
-  function tradeGroupIndicator(tradeId: string): React.CSSProperties {
-    if (!dropTarget) return {};
-    if (dropTarget.type === 'trade-group-end' && dropTarget.tradeId === tradeId) {
-      return { boxShadow: 'inset 0 0 0 2px #1890FF', background: '#E6F7FF' };
-    }
-    return {};
-  }
-
   function childIndicator(childId: string): React.CSSProperties {
     if (!dropTarget) return {};
     if (dropTarget.type === 'child' && dropTarget.childId === childId) {
@@ -1108,32 +812,30 @@ export function RolesTable() {
   function enterEditMode() {
     setEditGroups(JSON.parse(JSON.stringify(liveData)));
     setValidationAttempted(false);
-    // Expand all keys matching current groupByTrade mode
-    const keys = new Set<string>();
-    if (groupByTrade) {
-      liveData.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-    } else {
-      liveData.forEach(g => keys.add(g.id));
-    }
-    setExpanded(keys);
     setEditMode(true);
   }
   function cancelEdit() {
     setValidationAttempted(false);
     setEditMode(false); setEditGroups([]);
-    // Reset expanded keys to match current groupByTrade mode
-    const keys = new Set<string>();
-    if (groupByTrade) {
-      liveData.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-    } else {
-      liveData.forEach(g => keys.add(g.id));
-    }
-    setExpanded(keys);
   }
   function restoreToDefault() {
+    const assigned = getAssignedRoleSummary(editGroups.flatMap(g => g.children.map(c => c.name)).filter(Boolean));
+    if (assigned.memberCount > 0) {
+      setShowRestoreConfirm(false);
+      setRestoreBlockedModal(assigned);
+      return;
+    }
     setEditGroups(JSON.parse(JSON.stringify(ROLES_DATA)));
-    setExpanded(new Set(ROLES_DATA.map(g => g.id)));
     setShowRestoreConfirm(false);
+  }
+
+  function requestRestoreDefaults() {
+    const assigned = getAssignedRoleSummary(editGroups.flatMap(g => g.children.map(c => c.name)).filter(Boolean));
+    if (assigned.memberCount > 0) {
+      setRestoreBlockedModal(assigned);
+      return;
+    }
+    setShowRestoreConfirm(true);
   }
 
   function saveEdit() {
@@ -1148,41 +850,12 @@ export function RolesTable() {
       });
       return next;
     });
-    // Reset expanded keys to match current groupByTrade mode
-    const keys = new Set<string>();
-    if (groupByTrade) {
-      editGroups.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-    } else {
-      editGroups.forEach(g => keys.add(g.id));
-    }
-    setExpanded(keys);
     setEditMode(false); setEditGroups([]);
   }
 
   // ── Edit helpers ──────────────────────────────────────────────────────────
-  function updG(gId: string, f: keyof Pick<RoleGroup,'name'|'code'|'description'>, v: string) {
-    setEditGroups(p => p.map(g => g.id === gId ? { ...g, [f]: v } : g));
-  }
   function updC(gId: string, cId: string, f: keyof Pick<RoleChild,'name'|'code'|'description'>, v: string) {
     setEditGroups(p => p.map(g => g.id !== gId ? g : { ...g, children: g.children.map(c => c.id === cId ? { ...c, [f]: v } : c) }));
-  }
-  function updCTrade(gId: string, cId: string, trade: string | null) {
-    setEditGroups(p => p.map(g => g.id !== gId ? g : { ...g, children: g.children.map(c => c.id === cId ? { ...c, trade } : c) }));
-    // Auto-expand the target trade group (or Unassigned) so the role is immediately visible after moving
-    const targetKey = trade ?? '__unassigned__';
-    setExpanded(prev => new Set([...prev, targetKey]));
-  }
-  function delGroup(gId: string) {
-    const group = editGroups.find(g => g.id === gId);
-    if (!group) return;
-    // Check group name + all children names
-    const roleNames = [group.name, ...group.children.map(c => c.name)].filter(Boolean);
-    const count = countAssignedMembers(roleNames);
-    if (count > 0) {
-      setRoleInUseModal({ roleName: group.name, memberCount: count });
-      return;
-    }
-    setEditGroups(p => p.filter(g => g.id !== gId));
   }
   function delChild(gId: string, cId: string) {
     const group  = editGroups.find(g => g.id === gId);
@@ -1196,34 +869,6 @@ export function RolesTable() {
     setEditGroups(p => p.map(g => g.id !== gId ? g : { ...g, children: g.children.filter(c => c.id !== cId) }));
   }
 
-  function addSiblingGroup(gId: string) {
-    const newId = uid();
-    setEditGroups(p => { const a = [...p]; a.splice(a.findIndex(g => g.id === gId) + 1, 0, { id: newId, name: '', code: '', description: '', active: true, children: [] }); return a; });
-    setExpanded(p => new Set([...p, newId]));
-  }
-  function addChildToGroup(gId: string) {
-    setEditGroups(p => p.map(g => g.id !== gId ? g : { ...g, children: [...g.children, { id: uid(), name: '', code: '', description: '', active: true, trade: null }] }));
-    setExpanded(p => new Set([...p, gId]));
-  }
-  function addSiblingChild(gId: string, cId: string, inheritTrade: string | null = null) {
-    setEditGroups(p => p.map(g => {
-      if (g.id !== gId) return g;
-      const ch = [...g.children]; ch.splice(ch.findIndex(c => c.id === cId) + 1, 0, { id: uid(), name: '', code: '', description: '', active: true, trade: inheritTrade });
-      return { ...g, children: ch };
-    }));
-  }
-  function addRoleToTradeGroup(tradeKey: string) {
-    const trade = tradeKey === '__unassigned__' ? null : tradeKey;
-    setEditGroups(p => {
-      const arr = JSON.parse(JSON.stringify(p)) as RoleGroup[];
-      const targetGroup = arr.find(g => g.children.some(c => (c.trade ?? '__unassigned__') === tradeKey)) ?? arr[0];
-      if (!targetGroup) return arr;
-      targetGroup.children.push({ id: uid(), name: '', code: '', description: '', active: true, trade });
-      return arr;
-    });
-    setExpanded(prev => new Set([...prev, tradeKey]));
-  }
-
   function addNewRole() {
     const scrollToBottom = () => {
       setTimeout(() => {
@@ -1232,51 +877,21 @@ export function RolesTable() {
       }, 50);
     };
 
-    if (groupByTrade) {
-      // Add a new role with null trade → will appear in Unassigned section
-      setEditGroups(p => {
-        const arr = JSON.parse(JSON.stringify(p)) as RoleGroup[];
-        if (arr.length === 0) {
-          arr.push({ id: uid(), name: 'New Group', code: '', description: '', active: true, children: [] });
-        }
-        arr[arr.length - 1].children.push({ id: uid(), name: '', code: '', description: '', active: true, trade: null });
-        return arr;
-      });
-      // Ensure Unassigned trade group is expanded so the new row is visible
-      setExpanded(prev => new Set([...prev, '__unassigned__']));
-      scrollToBottom();
-    } else {
-      // Flat list: add to the last group's children
-      setEditGroups(p => {
-        const arr = JSON.parse(JSON.stringify(p)) as RoleGroup[];
-        if (arr.length === 0) {
-          arr.push({ id: uid(), name: 'New Group', code: '', description: '', active: true, children: [] });
-        }
-        arr[arr.length - 1].children.push({ id: uid(), name: '', code: '', description: '', active: true, trade: null });
-        return arr;
-      });
-      scrollToBottom();
-    }
+    setEditGroups(p => {
+      const arr = JSON.parse(JSON.stringify(p)) as RoleGroup[];
+      if (arr.length === 0) {
+        arr.push({ id: uid(), name: 'Roles', code: '', description: '', active: true, children: [] });
+      }
+      arr[arr.length - 1].children.push({ id: uid(), name: '', code: '', description: '', active: true, trade: null });
+      return arr;
+    });
+    scrollToBottom();
   }
 
   // ── Sort ──────────────────────────────────────────────────────────────────
   function handleSort(key: RoleSortKey) {
     setSortState(p => !p || p.key !== key ? { key, dir: 'asc' } : p.dir === 'asc' ? { key, dir: 'desc' } : null);
   }
-
-  // ── Expand ────────────────────────────────────────────────────────────────
-  function toggleExpanded(id: string) { setExpanded(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
-  function expandAll() {
-    const keys = new Set<string>();
-    if (editMode && !groupByTrade) {
-      editGroups.forEach(g => keys.add(g.id));
-    } else {
-      const data = editMode ? editGroups : liveData;
-      data.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-    }
-    setExpanded(keys);
-  }
-  function collapseAll() { setExpanded(new Set()); }
 
   // ── Toggle active ─────────────────────────────────────────────────────────
   function toggleActive(id: string) {
@@ -1301,18 +916,19 @@ export function RolesTable() {
 
   // ── Filtered + sorted ─────────────────────────────────────────────────────
   const q = search.trim().length >= 2 ? search.toLowerCase().trim() : '';
-  const viewGroups = useMemo(() => {
-    let groups = liveData.map(g => {
-      const gM = g.name.toLowerCase().includes(q) || g.code.toLowerCase().includes(q) || g.description.toLowerCase().includes(q);
-      const mc  = q ? g.children.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)) : g.children;
-      if (!q) return { ...g, matchedChildren: mc };
-      if (gM || mc.length > 0) return { ...g, matchedChildren: mc };
-      return null;
-    }).filter(Boolean) as (RoleGroup & { matchedChildren: RoleChild[] })[];
-
+  const flatViewRoles = useMemo(() => {
+    let roles: (RoleChild & { groupId: string })[] = [];
+    liveData.forEach(g => g.children.forEach(c => roles.push({ ...c, groupId: g.id })));
+    if (q) {
+      roles = roles.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.code.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q)
+      );
+    }
     if (sortState) {
       const { key, dir } = sortState; const mul = dir === 'asc' ? 1 : -1;
-      groups = [...groups].sort((a, b) => {
+      roles = [...roles].sort((a, b) => {
         let av: string | boolean = '', bv: string | boolean = '';
         if      (key === 'name')        { av = a.name;        bv = b.name; }
         else if (key === 'code')        { av = a.code;        bv = b.code; }
@@ -1322,104 +938,22 @@ export function RolesTable() {
         return av.localeCompare(bv as string) * mul;
       });
     }
-    return groups;
+    return roles;
   }, [q, sortState, activeMap, liveData]);
 
-  // ── Trade-based view groups (view mode only) ──────────────────────────────
-  const tradeViewGroups = useMemo(() => {
-    // Flatten all roles from all groups, preserving groupId for DnD continuity
-    const allRoles: (RoleChild & { groupId: string })[] = [];
-    liveData.forEach(g => g.children.forEach(c => allRoles.push({ ...c, groupId: g.id })));
-
-    // Apply search filter
-    const filtered = q
-      ? allRoles.filter(r =>
-          r.name.toLowerCase().includes(q) ||
-          r.code.toLowerCase().includes(q) ||
-          r.description.toLowerCase().includes(q) ||
-          (tradeById(r.trade)?.name.toLowerCase().includes(q) ?? false)
-        )
-      : allRoles;
-
-    // Group by trade
-    const tradeMap = new Map<string, (RoleChild & { groupId: string })[]>();
-    filtered.forEach(role => {
-      const key = role.trade ?? '__unassigned__';
-      if (!tradeMap.has(key)) tradeMap.set(key, []);
-      tradeMap.get(key)!.push(role);
-    });
-
-    // Build sorted list — assigned trades alphabetically, unassigned last
-    const groups: { key: string; tradeName: string; tradeCode: string; roles: (RoleChild & { groupId: string })[] }[] = [];
-    for (const [key, roles] of tradeMap) {
-      if (key === '__unassigned__') continue;
-      const t = tradeById(key);
-      groups.push({ key, tradeName: t?.name ?? key, tradeCode: t?.code ?? '', roles });
-    }
-    groups.sort((a, b) => a.tradeName.localeCompare(b.tradeName));
-
-    // Apply sort within each group
-    if (sortState) {
-      const { key: sk, dir } = sortState; const mul = dir === 'asc' ? 1 : -1;
-      groups.forEach(g => {
-        g.roles.sort((a, b) => {
-          const av = sk === 'name' ? a.name : sk === 'code' ? a.code : a.description;
-          const bv = sk === 'name' ? b.name : sk === 'code' ? b.code : b.description;
-          return av.localeCompare(bv) * mul;
-        });
-      });
-    }
-
-    // Unassigned group at end
-    const unassigned = tradeMap.get('__unassigned__') ?? [];
-    if (unassigned.length > 0) {
-      groups.push({ key: '__unassigned__', tradeName: 'Unassigned', tradeCode: '—', roles: unassigned });
-    }
-
-    return groups;
-  }, [liveData, q, sortState]);
-
-  const displayGroups = editMode
-    ? editGroups.map(g => ({ ...g, matchedChildren: g.children }))
-    : viewGroups;
-
-  // ── Edit-mode trade-based groups (mirrors tradeViewGroups but from editGroups) ─
-  const editTradeGroups = useMemo(() => {
-    if (!editMode) return [] as typeof tradeViewGroups;
-    const allRoles: (RoleChild & { groupId: string })[] = [];
-    editGroups.forEach(g => g.children.forEach(c => allRoles.push({ ...c, groupId: g.id })));
-    const tradeMap = new Map<string, (RoleChild & { groupId: string })[]>();
-    allRoles.forEach(role => {
-      const key = role.trade ?? '__unassigned__';
-      if (!tradeMap.has(key)) tradeMap.set(key, []);
-      tradeMap.get(key)!.push(role);
-    });
-    const groups: { key: string; tradeName: string; tradeCode: string; roles: (RoleChild & { groupId: string })[] }[] = [];
-    for (const [key, roles] of tradeMap) {
-      if (key === '__unassigned__') continue;
-      const t = tradeById(key);
-      groups.push({ key, tradeName: t?.name ?? key, tradeCode: t?.code ?? '', roles });
-    }
-    groups.sort((a, b) => a.tradeName.localeCompare(b.tradeName));
-    const unassigned = tradeMap.get('__unassigned__') ?? [];
-    if (unassigned.length > 0) {
-      groups.push({ key: '__unassigned__', tradeName: 'Unassigned', tradeCode: '—', roles: unassigned });
-    }
-    return groups;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editGroups, editMode]);
+  const flatEditRoles = useMemo(() => {
+    const roles: (RoleChild & { groupId: string })[] = [];
+    editGroups.forEach(g => g.children.forEach(c => roles.push({ ...c, groupId: g.id })));
+    return roles;
+  }, [editGroups]);
 
   const editErrors = (editMode && validationAttempted) ? computeEditErrors(editGroups) : new Map<string, string>();
 
   const showClear = search.length > 0;
-  const cellBase = (w: number | string): React.CSSProperties => ({
-    ...(typeof w === 'number' ? { width: w, flexShrink: 0 } : { flex: 1, minWidth: 0 }),
-    display: 'flex', alignItems: 'center', height: '100%', overflow: 'hidden',
-  });
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%', background: 'white', overflow: 'hidden', minHeight: 0, border: '1px solid #D9D9D9', borderRadius: 8, userSelect: isDragging ? 'none' : undefined }}>
+    <div data-dev-anchor="roles-flat-list-root" style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%', background: 'white', overflow: 'hidden', minHeight: 0, border: '1px solid #D9D9D9', borderRadius: 8, userSelect: isDragging ? 'none' : undefined }}>
 
       {/* Drag preview portal */}
       {isDragging && dragItemRef.current && (
@@ -1446,26 +980,6 @@ export function RolesTable() {
                 </button>
               )}
             </div>
-            {/* Vertical divider */}
-            <div style={{ width: 1, height: 24, background: '#D9D9D9', flexShrink: 0 }} />
-
-            {/* Group by Trade toggle — view mode */}
-            <GroupByTradeToggle value={groupByTrade} onChange={v => {
-              setGroupByTrade(v);
-              const keys = new Set<string>();
-              if (v) {
-                liveData.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-              } else {
-                liveData.forEach(g => keys.add(g.id));
-              }
-              setExpanded(keys);
-            }} />
-
-            {/* Vertical divider */}
-            <div style={{ width: 1, height: 24, background: '#D9D9D9', flexShrink: 0 }} />
-
-            <ToolbarButton onClick={expandAll} disabled={!groupByTrade}><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.19791 9.90001C6.43574 9.90001 6.6526 9.80908 6.82749 9.62019L12.158 4.1708C12.3118 4.0169 12.3888 3.82803 12.3888 3.59718C12.3888 3.14248 12.0321 2.78571 11.5843 2.78571C11.3605 2.78571 11.1507 2.87665 10.9967 3.03055L6.19791 7.9483L1.39908 3.03055C1.23819 2.87665 1.03532 2.78571 0.811464 2.78571C0.356765 2.78571 0 3.14248 0 3.59718C0 3.82103 0.0839447 4.0169 0.237843 4.1708L5.56832 9.62019C5.7502 9.80908 5.96006 9.90001 6.19791 9.90001Z" fill="currentColor" /></svg><span>Expand All</span></ToolbarButton>
-            <ToolbarButton onClick={collapseAll} disabled={!groupByTrade}><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M0.237843 8.52193C0.0839447 8.66883 0 8.8647 0 9.08855C0 9.54324 0.356765 9.90001 0.811464 9.90001C1.03532 9.90001 1.24518 9.81607 1.39908 9.65517L6.19791 4.73742L10.9967 9.65517C11.1507 9.81607 11.3605 9.90001 11.5843 9.90001C12.0321 9.90001 12.3888 9.54324 12.3888 9.08855C12.3888 8.8647 12.3118 8.66883 12.158 8.52193L6.82749 3.06553C6.6526 2.88365 6.43574 2.78571 6.19791 2.78571C5.96006 2.78571 5.7502 2.87665 5.56832 3.06553L0.237843 8.52193Z" fill="currentColor" /></svg><span>Collapse All</span></ToolbarButton>
           </div>
         )}
 
@@ -1475,31 +989,6 @@ export function RolesTable() {
             {/* + Add Role button — Secondary Medium §15.2 */}
             <AddRoleButton onClick={addNewRole} />
 
-            {/* Vertical divider */}
-            <div style={{ width: 1, height: 24, background: '#D9D9D9', flexShrink: 0 }} />
-
-            {/* Group by Trade toggle */}
-            <GroupByTradeToggle value={groupByTrade} onChange={v => {
-              setGroupByTrade(v);
-              // Update expanded keys to match the new grouping mode
-              const keys = new Set<string>();
-              if (v) {
-                editGroups.forEach(g => g.children.forEach(c => keys.add(c.trade ?? '__unassigned__')));
-              } else {
-                editGroups.forEach(g => keys.add(g.id));
-              }
-              setExpanded(keys);
-            }} />
-
-            {/* Expand All / Collapse All — always visible; disabled when groupByTrade is OFF */}
-            <ToolbarButton onClick={expandAll} disabled={!groupByTrade}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.19791 9.90001C6.43574 9.90001 6.6526 9.80908 6.82749 9.62019L12.158 4.1708C12.3118 4.0169 12.3888 3.82803 12.3888 3.59718C12.3888 3.14248 12.0321 2.78571 11.5843 2.78571C11.3605 2.78571 11.1507 2.87665 10.9967 3.03055L6.19791 7.9483L1.39908 3.03055C1.23819 2.87665 1.03532 2.78571 0.811464 2.78571C0.356765 2.78571 0 3.14248 0 3.59718C0 3.82103 0.0839447 4.0169 0.237843 4.1708L5.56832 9.62019C5.7502 9.80908 5.96006 9.90001 6.19791 9.90001Z" fill="currentColor" /></svg>
-              <span>Expand All</span>
-            </ToolbarButton>
-            <ToolbarButton onClick={collapseAll} disabled={!groupByTrade}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M0.237843 8.52193C0.0839447 8.66883 0 8.8647 0 9.08855C0 9.54324 0.356765 9.90001 0.811464 9.90001C1.03532 9.90001 1.24518 9.81607 1.39908 9.65517L6.19791 4.73742L10.9967 9.65517C11.1507 9.81607 11.3605 9.90001 11.5843 9.90001C12.0321 9.90001 12.3888 9.54324 12.3888 9.08855C12.3888 8.8647 12.3118 8.66883 12.158 8.52193L6.82749 3.06553C6.6526 2.88365 6.43574 2.78571 6.19791 2.78571C5.96006 2.78571 5.7502 2.87665 5.56832 3.06553L0.237843 8.52193Z" fill="currentColor" /></svg>
-              <span>Collapse All</span>
-            </ToolbarButton>
           </div>
         )}
 
@@ -1507,7 +996,9 @@ export function RolesTable() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {editMode ? (
             <>
-              <RestoreDefaultButton onClick={() => setShowRestoreConfirm(true)} />
+              <div data-dev-anchor="roles-restore-defaults">
+                <RestoreDefaultButton onClick={requestRestoreDefaults} />
+              </div>
               <CancelButton onClick={cancelEdit} />
               <SecondaryButton onClick={() => setImportOpen(true)}><ImportIcon /><span>Import</span></SecondaryButton>
               <SaveButton onClick={saveEdit} />
@@ -1525,8 +1016,8 @@ export function RolesTable() {
       {/* ── Table ────────────────────────────────────────────────────────── */}
       <div ref={tableScrollRef} style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         <div style={{ minWidth: editMode
-          ? COL_DRAG + colWidths.name + colWidths.code + colWidths.trade + 200 + COL_ACTIONS
-          : colWidths.nameView + colWidths.code + (groupByTrade ? 0 : colWidths.trade) + 200
+          ? COL_DRAG + colWidths.name + colWidths.code + 200 + COL_ACTIONS
+          : colWidths.nameView + colWidths.code + 200
         }}>
 
           {/* ── Header ─────────────────────────────────────────────────── */}
@@ -1535,12 +1026,6 @@ export function RolesTable() {
             {editMode && <div style={{ width: COL_DRAG, flexShrink: 0, background: '#FAFAFA' }} />}
             <RoleHeaderCell label={editMode ? <><span>Name</span><span style={{ color: '#FF4D4F', marginLeft: 2 }}>*</span></> : 'Name'} sortKey="name" sortState={sortState} onSort={() => handleSort('name')} style={{ width: editMode ? colWidths.name : colWidths.nameView }} editMode={editMode} colKey={editMode ? 'name' : 'nameView'} onDelta={onColDelta} />
             <RoleHeaderCell label="Code"        sortKey="code" sortState={sortState} onSort={() => handleSort('code')} style={{ width: colWidths.code }} editMode={editMode} colKey="code" onDelta={onColDelta} />
-            {editMode && (
-              <RoleHeaderCell label="Trade" sortKey={null} sortState={sortState} onSort={() => {}} style={{ width: colWidths.trade }} editMode colKey="trade" onDelta={onColDelta} />
-            )}
-            {!editMode && !groupByTrade && (
-              <RoleHeaderCell label="Trade" sortKey={null} sortState={sortState} onSort={() => {}} style={{ width: colWidths.trade }} editMode={false} colKey="trade" onDelta={onColDelta} />
-            )}
             <RoleHeaderCell label="Role description" sortKey={null} sortState={sortState} onSort={() => {}} style={{ flex: 1, minWidth: 0 }} editMode={editMode} />
             {editMode && (
               <RoleHeaderCell label="Actions" sortKey={null} sortState={sortState} onSort={() => {}} style={{ width: COL_ACTIONS }} align="center" editMode />
@@ -1550,23 +1035,14 @@ export function RolesTable() {
           {/* ── Validation banner (edit mode) ──────────────────────── */}
           {editMode && <ValidationBanner count={editErrors.size} />}
 
-          {/* ── VIEW MODE (groupByTrade OFF): Flat list — all roles without trade headers ── */}
-          {!editMode && !groupByTrade && (() => {
-            const flatRoles: (RoleChild & { groupId: string })[] = [];
-            liveData.forEach(g => g.children.forEach(c => flatRoles.push({ ...c, groupId: g.id })));
-            const filtered = q
-              ? flatRoles.filter(r =>
-                  r.name.toLowerCase().includes(q) ||
-                  r.code.toLowerCase().includes(q) ||
-                  r.description.toLowerCase().includes(q)
-                )
-              : flatRoles;
-            if (filtered.length === 0) return (
+          {/* ── VIEW MODE: Flat role list ───────────────────────────────── */}
+          {!editMode && (() => {
+            if (flatViewRoles.length === 0) return (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, fontFamily: 'Open Sans, sans-serif', fontSize: 14, color: '#8C8C8C' }}>
                 No roles match your search.
               </div>
             );
-            return filtered.map((role, idx) => {
+            return flatViewRoles.map(role => {
               const childActive = activeMap[role.id] ?? role.active;
               return (
                 <div key={role.id}
@@ -1589,21 +1065,6 @@ export function RolesTable() {
                       {highlightText(role.code, search)}
                     </span>
                   </div>
-                  {/* Trade column — visible in view mode when groupByTrade is OFF */}
-                  <div style={{ width: colWidths.trade, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 8, overflow: 'hidden' }}>
-                    {role.trade ? (() => {
-                      const t = tradeById(role.trade);
-                      return (
-                        <>
-                          <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#384857' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {highlightText(t?.name ?? role.trade, search)}
-                          </span>
-                        </>
-                      );
-                    })() : (
-                      <span style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 13, color: '#BFBFBF' }}>—</span>
-                    )}
-                  </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8, overflow: 'hidden' }}>
                     <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#262626' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {highlightText(role.description, search)}
@@ -1614,95 +1075,10 @@ export function RolesTable() {
             });
           })()}
 
-          {/* ── VIEW MODE (groupByTrade ON): Trade-based group rows ──────────────────────── */}
-          {!editMode && groupByTrade && tradeViewGroups.map(tradeGroup => {
-            const isExpanded = expanded.has(tradeGroup.key);
-            return (
-              <div key={tradeGroup.key}>
-                {/* Trade group header row — Gray/3 bg, 32px height */}
-                <div
-                  onClick={() => toggleExpanded(tradeGroup.key)}
-                  style={{
-                    display: 'flex', alignItems: 'stretch', height: 32,
-                    background: '#F5F5F5', borderBottom: '1px solid #D9D9D9',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {/* Chevron + Trade Name + Count pill */}
-                  <div style={{ width: colWidths.nameView, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 12, paddingRight: 8 }}>
-                    <button onClick={e => { e.stopPropagation(); toggleExpanded(tradeGroup.key); }}
-                      style={{ background: 'none', border: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, flexShrink: 0, cursor: 'pointer' }}>
-                      <ChevronIcon expanded={isExpanded} />
-                    </button>
-                    {/* Trade name first */}
-                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, lineHeight: '20px', color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                      {highlightText(tradeGroup.tradeName, search)}
-                    </span>
-                  </div>
-                  {/* Trade Code pill */}
-                  <div style={{ width: colWidths.code, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                    {tradeGroup.tradeCode !== '—' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', background: '#E8E8E8', borderRadius: 4, padding: '2px 7px', fontFamily: 'Open Sans, sans-serif', fontSize: 11, fontWeight: 600, color: '#595959', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-                        {tradeGroup.tradeCode}
-                      </span>
-                    ) : (
-                      <span style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 13, color: '#BFBFBF' }}>—</span>
-                    )}
-                  </div>
-                  {/* Description col — empty for trade header */}
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }} />
-                </div>
-
-                {/* Child role rows under this trade */}
-                {isExpanded && tradeGroup.roles.map(role => {
-                  const childActive = activeMap[role.id] ?? role.active;
-                  return (
-                    <div key={role.id}
-                      style={{
-                        display: 'flex', alignItems: 'stretch', height: ROW_H,
-                        background: 'white', borderBottom: '1px solid #D9D9D9',
-                        transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'white')}
-                    >
-                      {/* Name — indented */}
-                      <div style={{ width: colWidths.nameView, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 12 + CHILD_INDENT, paddingRight: 8, overflow: 'hidden' }}>
-                        <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#1D2C38' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {highlightText(role.name, search)}
-                        </span>
-                      </div>
-                      {/* Code */}
-                      <div style={{ width: colWidths.code, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                        <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#262626' : '#BFBFBF', whiteSpace: 'nowrap' }}>
-                          {highlightText(role.code, search)}
-                        </span>
-                      </div>
-                      {/* Description */}
-                      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8, overflow: 'hidden' }}>
-                        <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#262626' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {highlightText(role.description, search)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-
-          {!editMode && groupByTrade && tradeViewGroups.length === 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, fontFamily: 'Open Sans, sans-serif', fontSize: 14, color: '#8C8C8C' }}>
-              No roles match your search.
-            </div>
-          )}
-
-          {/* ── EDIT MODE (group by trade OFF): Flat list — all roles from all groups ── */}
-          {editMode && !groupByTrade && (() => {
-            const flatRoles: (RoleChild & { groupId: string })[] = [];
-            editGroups.forEach(g => g.children.forEach(c => flatRoles.push({ ...c, groupId: g.id })));
-            if (flatRoles.length === 0) return null;
-            return flatRoles.map((child, idx) => {
+          {/* ── EDIT MODE: Flat role list ───────────────────────────────── */}
+          {editMode && (() => {
+            if (flatEditRoles.length === 0) return null;
+            return flatEditRoles.map((child, idx) => {
               const isChildHovered = !isDragging && hoveredRowId === child.id;
               // ── Inline Error Expansion §26 ─────────────────────────────────
               const rowHasError = editErrors.has(`c_${child.groupId}_${child.id}_name`) ||
@@ -1712,9 +1088,12 @@ export function RolesTable() {
               const cellPadTop  = rowHasError ? 8 : 0;
               return (
                 <div key={child.id}
+                  data-row-type="child"
+                  data-row-id={child.id}
+                  data-group-id={child.groupId}
                   onMouseEnter={() => setHoveredRowId(child.id)}
                   onMouseLeave={() => setHoveredRowId(null)}
-                  style={{ display: 'flex', alignItems: 'stretch', height: currentRowH, background: isChildHovered ? '#F9FAFB' : idx % 2 === 0 ? 'white' : '#FAFAFA', borderBottom: '1px solid #D9D9D9', transition: 'background 0.1s' }}
+                  style={{ display: 'flex', alignItems: 'stretch', height: currentRowH, background: draggingId === child.id ? '#F0F2F5' : isChildHovered ? '#F9FAFB' : idx % 2 === 0 ? 'white' : '#FAFAFA', borderBottom: '1px solid #D9D9D9', opacity: draggingId === child.id ? 0.4 : 1, transition: 'background 0.1s, opacity 0.15s', ...childIndicator(child.id) }}
                 >
                   <DragHandle onMouseDown={e => onHandleMouseDown(e, { type: 'child', groupId: child.groupId, childId: child.id, label: child.name || 'Untitled Role' })} />
                   <div style={{ width: colWidths.name, flexShrink: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 12, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
@@ -1727,9 +1106,6 @@ export function RolesTable() {
                       error={editErrors.has(`c_${child.groupId}_${child.id}_code`)}
                       errorMessage={editErrors.get(`c_${child.groupId}_${child.id}_code`)} />
                   </div>
-                  <div style={{ width: colWidths.trade, flexShrink: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 8, paddingRight: 8 }}>
-                    <TradeDropdown value={child.trade} onChange={tradeId => updCTrade(child.groupId, child.id, tradeId)} />
-                  </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 8, paddingRight: 8, overflow: 'hidden' }}>
                     <EditInput value={child.description} onChange={v => updC(child.groupId, child.id, 'description', v)} placeholder="Role description" />
                   </div>
@@ -1741,133 +1117,7 @@ export function RolesTable() {
             });
           })()}
 
-          {/* ── EDIT MODE (group by trade ON): Trade-based group rows (trade headers non-editable, children editable) ── */}
-          {editMode && groupByTrade && editTradeGroups.map(tradeGroup => {
-            const isExpanded = expanded.has(tradeGroup.key);
-            return (
-              <div key={tradeGroup.key}>
-                {/* ── Trade group header row — 32px, drop target for trade reassignment ── */}
-                <div
-                  data-row-type="trade-group"
-                  data-row-id={tradeGroup.key}
-                  onClick={() => toggleExpanded(tradeGroup.key)}
-                  style={{
-                    display: 'flex', alignItems: 'stretch', height: 32,
-                    background: '#F5F5F5', borderBottom: '1px solid #D9D9D9',
-                    cursor: 'pointer',
-                    transition: 'background 0.1s, box-shadow 0.1s',
-                    ...tradeGroupIndicator(tradeGroup.key),
-                  }}
-                >
-                  {/* Drag placeholder (keeps columns aligned with child rows) */}
-                  <div style={{ width: COL_DRAG, flexShrink: 0 }} />
-
-                  {/* Chevron + Trade Name + Count pill */}
-                  <div style={{ width: colWidths.name, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4, paddingRight: 8 }}>
-                    <button onClick={e => { e.stopPropagation(); toggleExpanded(tradeGroup.key); }}
-                      style={{ background: 'none', border: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, flexShrink: 0, cursor: 'pointer' }}>
-                      <ChevronIcon expanded={isExpanded} />
-                    </button>
-                    {/* Trade name first */}
-                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, fontSize: 13, lineHeight: '20px', color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                      {tradeGroup.tradeName}
-                    </span>
-                  </div>
-
-                  {/* Trade Code pill */}
-                  <div style={{ width: colWidths.code, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                    {tradeGroup.tradeCode !== '—' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', background: '#E8E8E8', borderRadius: 4, padding: '2px 7px', fontFamily: 'Open Sans, sans-serif', fontSize: 11, fontWeight: 600, color: '#595959', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-                        {tradeGroup.tradeCode}
-                      </span>
-                    ) : (
-                      <span style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 13, color: '#BFBFBF' }}>—</span>
-                    )}
-                  </div>
-
-                  {/* Trade column placeholder — empty */}
-                  <div style={{ width: colWidths.trade, flexShrink: 0 }} />
-
-                  {/* Description col — empty */}
-                  <div style={{ flex: 1, minWidth: 0 }} />
-
-                  {/* Actions col placeholder */}
-                  <div style={{ width: COL_ACTIONS, flexShrink: 0 }} />
-                </div>
-
-                {/* ── Child role rows (Tier 2) — fully editable ─────────── */}
-                {isExpanded && tradeGroup.roles.map(child => {
-                  const isChildSrc     = draggingId === child.id;
-                  const isChildHovered = !isDragging && hoveredRowId === child.id;
-                  // ── Inline Error Expansion §26 ──────────────────────────
-                  const rowHasError = editErrors.has(`c_${child.groupId}_${child.id}_name`) ||
-                                      editErrors.has(`c_${child.groupId}_${child.id}_code`);
-                  const currentRowH = rowHasError ? EDIT_ROW_H_ERROR : EDIT_ROW_H_BASE;
-                  const cellAlign   = rowHasError ? 'flex-start' as const : 'center' as const;
-                  const cellPadTop  = rowHasError ? 8 : 0;
-
-                  return (
-                    <div key={child.id}
-                      data-row-type="child"
-                      data-row-id={child.id}
-                      data-group-id={child.groupId}
-                      onMouseEnter={() => setHoveredRowId(child.id)}
-                      onMouseLeave={() => setHoveredRowId(null)}
-                      style={{
-                        display: 'flex', alignItems: 'stretch', height: currentRowH,
-                        background: isChildSrc ? '#F0F2F5' : isChildHovered ? '#F9FAFB' : 'white',
-                        borderBottom: '1px solid #D9D9D9',
-                        opacity: isChildSrc ? 0.4 : 1,
-                        transition: 'background 0.1s, opacity 0.15s',
-                        ...childIndicator(child.id),
-                      }}
-                    >
-                      {/* Drag handle */}
-                      <DragHandle onMouseDown={e => onHandleMouseDown(e, { type: 'child', groupId: child.groupId, childId: child.id, label: child.name || 'Untitled Role' })} />
-
-                      {/* Role Name */}
-                      <div style={{ ...cellBase(colWidths.name), alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 4 + CHILD_INDENT, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
-                        <EditInput
-                          value={child.name}
-                          onChange={v => updC(child.groupId, child.id, 'name', v)}
-                          placeholder="Role name"
-                          error={editErrors.has(`c_${child.groupId}_${child.id}_name`)}
-                          errorMessage={editErrors.get(`c_${child.groupId}_${child.id}_name`)}
-                        />
-                      </div>
-
-                      {/* Code */}
-                      <div style={{ ...cellBase(colWidths.code), alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 8, paddingRight: 8, overflow: rowHasError ? 'visible' : 'hidden', position: 'relative', zIndex: rowHasError ? 2 : undefined }}>
-                        <EditInput value={child.code} onChange={v => updC(child.groupId, child.id, 'code', v)} placeholder="Code"
-                          error={editErrors.has(`c_${child.groupId}_${child.id}_code`)}
-                          errorMessage={editErrors.get(`c_${child.groupId}_${child.id}_code`)} />
-                      </div>
-
-                      {/* Trade dropdown */}
-                      <div style={{ ...cellBase(colWidths.trade), alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 8, paddingRight: 8 }}>
-                        <TradeDropdown
-                          value={child.trade}
-                          onChange={tradeId => updCTrade(child.groupId, child.id, tradeId)}
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div style={{ ...cellBase('flex'), alignItems: cellAlign, paddingTop: cellPadTop, paddingLeft: 8, paddingRight: 8 }}>
-                        <EditInput value={child.description} onChange={v => updC(child.groupId, child.id, 'description', v)} placeholder="Role description" />
-                      </div>
-
-                      {/* Actions */}
-                      <div style={{ width: COL_ACTIONS, flexShrink: 0, display: 'flex', alignItems: cellAlign, paddingTop: cellPadTop, justifyContent: 'center', gap: 4, height: '100%', paddingLeft: 8, paddingRight: 8 }}>
-                        <IconBtn onClick={() => delChild(child.groupId, child.id)} title="Delete role"><TrashIcon /></IconBtn>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-
-          {editMode && (groupByTrade ? editTradeGroups.length === 0 : editGroups.flatMap(g => g.children).length === 0) && (
+          {editMode && flatEditRoles.length === 0 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, fontFamily: 'Open Sans, sans-serif', fontSize: 14, color: '#8C8C8C' }}>
               All roles have been removed.
             </div>
@@ -1887,13 +1137,21 @@ export function RolesTable() {
       />
 
       {/* ── Export Roles Modal ────────────────────────────────────────────── */}
-      <ExportRolesModal isOpen={exportOpen} onClose={() => setExportOpen(false)} roles={liveData} tradeItems={TRADE_ITEMS} />
+      <ExportRolesModal isOpen={exportOpen} onClose={() => setExportOpen(false)} roles={liveData} />
 
       {/* ── Restore to Default Confirmation ───────────────────────────────── */}
       {showRestoreConfirm && (
         <RestoreConfirmModal
           onConfirm={restoreToDefault}
           onCancel={() => setShowRestoreConfirm(false)}
+        />
+      )}
+
+      {restoreBlockedModal && (
+        <RestoreDefaultsBlockedModal
+          memberCount={restoreBlockedModal.memberCount}
+          roleNames={restoreBlockedModal.roleNames}
+          onClose={() => setRestoreBlockedModal(null)}
         />
       )}
 
@@ -1909,30 +1167,6 @@ export function RolesTable() {
   );
 }
 
-// ─── Toolbar helpers ──────────────────────────────────���───────────────────────
-function ToolbarButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      onMouseEnter={() => !disabled && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      disabled={disabled}
-      style={{
-        height: 36, display: 'flex', alignItems: 'center', gap: 4,
-        paddingLeft: 12, paddingRight: 12,
-        background: (!disabled && hovered) ? '#F5F6F7' : 'transparent',
-        border: 'none', borderRadius: 4,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400,
-        color: disabled ? '#BFBFBF' : '#384857',
-        whiteSpace: 'nowrap', transition: 'background 0.15s',
-        opacity: disabled ? 0.5 : 1,
-      }}>
-      {children}
-    </button>
-  );
-}
 function SecondaryButton({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -1953,19 +1187,6 @@ function AddRoleButton({ onClick }: { onClick: () => void }) {
       </svg>
       <span>Add Role</span>
     </button>
-  );
-}
-
-// ─── Group by Trade Toggle ─────────────────────────────────────────────────
-function GroupByTradeToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => onChange(!value)}>
-      {/* Toggle track */}
-      <div style={{ width: 40, height: 20, borderRadius: 10, background: value ? '#243746' : '#D9D9D9', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', top: 2, left: value ? 22 : 2, width: 16, height: 16, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s' }} />
-      </div>
-      <span style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 14, fontWeight: 400, color: '#384857', whiteSpace: 'nowrap', userSelect: 'none' }}>Group by Trade</span>
-    </div>
   );
 }
 
@@ -2017,6 +1238,91 @@ function RestoreDefaultButton({ onClick }: { onClick: () => void }) {
     >
       Restore Defaults
     </button>
+  );
+}
+
+function RestoreDefaultsBlockedModal({
+  memberCount,
+  roleNames,
+  onClose,
+}: {
+  memberCount: number;
+  roleNames: string[];
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 700, background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: 520, maxWidth: 'calc(100vw - 32px)', background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.24)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, padding: '0 24px' }}>
+            <p style={{ fontFamily: "'Actor', sans-serif", fontWeight: 400, fontSize: 24, lineHeight: '28.8px', color: '#1B2736', margin: 0 }}>
+              Cannot Restore Defaults
+            </p>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 40, transition: 'background-color 0.15s', padding: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F5F6F7')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <div style={{ padding: 8 }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 2L14 14M14 2L2 14" stroke="#384857" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+            </button>
+          </div>
+          <div style={{ height: 1, backgroundColor: '#F0F0F0', width: '100%' }} />
+        </div>
+
+        <div style={{ padding: '24px 28px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEF3F2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 3L18.5 18H1.5L10 3Z" stroke="#D92D20" strokeWidth="1.5" strokeLinejoin="round" />
+                <path d="M10 9V12" stroke="#D92D20" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="10" cy="15" r="0.75" fill="#D92D20" />
+              </svg>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ margin: 0, fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, lineHeight: '20px', color: '#1D2C38' }}>
+                Restore defaults cannot override roles that are assigned to users.
+              </p>
+              <p style={{ margin: 0, fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, lineHeight: '20px', color: '#616D79' }}>
+                {memberCount} {memberCount === 1 ? 'user is' : 'users are'} currently assigned to {roleNames.length} {roleNames.length === 1 ? 'role' : 'roles'} in this list. Make sure no user is assigned to any current role, then return here and click <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Restore Defaults</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFF7ED', border: '1px solid #FDDCB5', borderRadius: 6, padding: '10px 14px' }}>
+            <p style={{ margin: 0, fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 400, lineHeight: '18px', color: '#C4320A' }}>
+              <span style={{ fontWeight: 600 }}>Assigned roles:</span> {roleNames.slice(0, 6).join(', ')}{roleNames.length > 6 ? `, and ${roleNames.length - 6} more` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ height: 64, borderTop: '1px solid #C3C7CC', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, background: '#FFFFFF' }}>
+          <button
+            onClick={onClose}
+            style={{ height: 36, padding: '0 20px', background: '#FF4D00', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, color: '#FFFFFF', transition: 'background 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#FF773E')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#FF4D00')}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -2104,7 +1410,7 @@ function RestoreConfirmModal({ onConfirm, onCancel }: { onConfirm: () => void; o
 
             <div style={{ flex: 1 }}>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 400, lineHeight: '22px', color: '#384857', margin: 0 }}>
-                This will <strong style={{ fontWeight: 600, color: '#1D2C38' }}>replace all your current edits</strong> with the original default roles. Any custom groups, roles, codes, or descriptions you've added will be permanently lost.
+                This will <strong style={{ fontWeight: 600, color: '#1D2C38' }}>replace all your current edits</strong> with the original default roles. Any custom roles, codes, or descriptions you've added will be permanently lost.
               </p>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, lineHeight: '20px', color: '#8C8C8C', margin: '8px 0 0' }}>
                 This action <strong style={{ fontWeight: 600 }}>cannot be undone.</strong>

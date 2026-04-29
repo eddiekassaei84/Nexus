@@ -549,7 +549,7 @@ export function DevDocumentModal({
         <div style={{ height: 62, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px 0 22px', borderBottom: '1px solid #E5E7E9', background: '#FAFAFA' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 15, fontWeight: 700, color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{document.title}</div>
-            <a href={document.sourceUrl} target="_blank" rel="noreferrer" style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 12, color: '#1890FF', textDecoration: 'underline' }}>Open source in Confluence</a>
+            <a href={document.sourceUrl} target="_blank" rel="noreferrer" style={{ fontFamily: 'Open Sans, sans-serif', fontSize: 12, color: '#1890FF', textDecoration: 'underline' }}>Open source document</a>
           </div>
           <button type="button" onClick={onClose} aria-label="Close document preview" style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid #D9D9D9', background: '#FFFFFF', cursor: 'pointer', fontSize: 20, color: '#384857' }}>×</button>
         </div>

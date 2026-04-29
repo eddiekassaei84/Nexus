@@ -4,15 +4,11 @@ import svgPathsClose from '../../imports/svg-uayoveoicl';
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RoleChild {
   id: string; name: string; code: string; description: string; active: boolean;
-  trade: string | null; // trade ID — resolved to name via tradeItems lookup
+  trade: string | null;
 }
 interface RoleGroup {
   id: string; name: string; code: string; description: string; active: boolean; children: RoleChild[];
 }
-interface TradeItem {
-  id: string; name: string;
-}
-
 // ─── Icons ────────────────────────────────────────────────────────────────────
 function CloseIcon() {
   return (
@@ -35,9 +31,8 @@ function makeTimestamp() {
   );
 }
 
-// Export column order mirrors the import template exactly:
-// Role Name → Code → Trade → Description
-const EXPORT_HEADERS = ['Role Name', 'Code', 'Trade', 'Description'];
+// Export column order mirrors the flat import template exactly.
+const EXPORT_HEADERS = ['Name', 'Code', 'Note'];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 export interface ExportRolesModalProps {
@@ -45,7 +40,6 @@ export interface ExportRolesModalProps {
   onClose: () => void;
   projectName?: string;
   roles?: RoleGroup[];
-  tradeItems?: TradeItem[]; // for resolving trade IDs to human-readable names
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -54,7 +48,6 @@ export function ExportRolesModal({
   onClose,
   projectName = 'Cleveland Hospital',
   roles = [],
-  tradeItems = [],
 }: ExportRolesModalProps) {
   const makeDefault = () => `${projectName.replace(/\s+/g, '')}-Roles-${makeTimestamp()}`;
   const [filename,     setFilename]     = useState(makeDefault);
@@ -77,21 +70,14 @@ export function ExportRolesModal({
         ? `"${v.replace(/"/g, '""')}"`
         : v;
 
-    // Build a trade ID → name lookup map
-    const tradeNameMap = new Map<string, string>();
-    for (const t of tradeItems) tradeNameMap.set(t.id, t.name);
-
-    // Flat list — one row per child role, in liveData order (group order preserved,
-    // then children within each group in their order). Matches import template exactly.
+    // Flat list: one row per role, in the current visible order.
     const rows: string[][] = [];
     for (const group of roles) {
       for (const child of group.children) {
-        const tradeName = child.trade ? (tradeNameMap.get(child.trade) ?? '') : '';
         rows.push([
-          child.name,        // Role Name
+          child.name,        // Name
           child.code,        // Code
-          tradeName,         // Trade (human-readable)
-          child.description, // Description
+          child.description, // Note
         ]);
       }
     }
@@ -187,8 +173,7 @@ export function ExportRolesModal({
                 fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: 14,
                 lineHeight: '20px', color: '#595959', margin: 0,
               }}>
-                Export your project roles to CSV for review, editing, or sharing. The file will
-                include all role groups and their child roles.{' '}
+                Export your project roles to CSV for review, editing, or sharing.{' '}
                 {totalRows > 0 && (
                   <><strong style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600, color: '#384857' }}>{totalRows}</strong>{' '}
                   row{totalRows !== 1 ? 's' : ''} will be exported.</>

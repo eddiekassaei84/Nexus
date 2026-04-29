@@ -73,87 +73,48 @@ function parseIntoRoles(
 ): { groups: RoleGroup[]; imported: number; failed: number; reportRows: string[][] } {
   const colIdx = (pattern: RegExp) => headers.findIndex(h => pattern.test(h.trim()));
 
-  const gIdx = colIdx(/group.?name/i) >= 0 ? colIdx(/group.?name/i) : 0;
-  const rIdx = colIdx(/role.?name/i) >= 0 ? colIdx(/role.?name/i) : colIdx(/^name$/i) >= 0 ? colIdx(/^name$/i) : 1;
+  const rIdx = colIdx(/role.?name/i) >= 0 ? colIdx(/role.?name/i) : colIdx(/^name$/i) >= 0 ? colIdx(/^name$/i) : 0;
   const cIdx = colIdx(/^code$/i);
-  const dIdx = colIdx(/desc/i);
+  const dIdx = colIdx(/desc|note/i);
   const aIdx = colIdx(/active/i);
 
   const get = (row: string[], idx: number) => (idx >= 0 && row[idx] !== undefined ? row[idx].trim() : '');
   const isActive = (row: string[], idx: number) => idx < 0 ? true : !/^(no|false|0)$/i.test(get(row, idx));
 
-  // Group rows by Group Name
-  const groupMap = new Map<string, { headerRow: string[] | null; childRows: string[][] }>();
   const reportRows: string[][] = [];
   let failed = 0;
-
-  for (const row of rows) {
-    const groupName = get(row, gIdx);
-    if (!groupName) {
-      failed++;
-      reportRows.push([...row, 'Failed — Missing Group Name']);
-      continue;
-    }
-    if (!groupMap.has(groupName)) {
-      groupMap.set(groupName, { headerRow: null, childRows: [] });
-    }
-    const entry = groupMap.get(groupName)!;
-    const roleName = get(row, rIdx);
-
-    // A row where Role Name == Group Name is the group header row (from export format)
-    if (!roleName || roleName === groupName) {
-      entry.headerRow = row;
-    } else {
-      entry.childRows.push(row);
-    }
-  }
-
-  // Build RoleGroup objects
-  const groups: RoleGroup[] = [];
   let imported = 0;
 
-  let gCounter = 0;
-  for (const [groupName, { headerRow, childRows }] of groupMap) {
-    const hRow = headerRow ?? [];
-    const group: RoleGroup = {
-      id: `imp_g_${gCounter++}_${Date.now()}`,
-      name: groupName,
-      code: get(hRow, cIdx) || groupName.replace(/\s+/g, '').slice(0, 6).toUpperCase(),
-      description: get(hRow, dIdx),
-      active: hRow.length ? isActive(hRow, aIdx) : true,
-      children: [],
-    };
+  const group: RoleGroup = {
+    id: `imp_roles_${Date.now()}`,
+    name: 'Roles',
+    code: 'ROLES',
+    description: '',
+    active: true,
+    children: [],
+  };
 
-    let cCounter = 0;
-    for (const row of childRows) {
-      const roleName = get(row, rIdx);
-      if (!roleName) {
-        failed++;
-        reportRows.push([...row, 'Failed — Missing Role Name']);
-        continue;
-      }
-      group.children.push({
-        id: `imp_c_${gCounter}_${cCounter++}_${Date.now()}`,
-        name: roleName,
-        code: get(row, cIdx),
-        description: get(row, dIdx),
-        active: isActive(row, aIdx),
-        trade: null,
-      });
-      imported++;
-      reportRows.push([...row, 'Imported Successfully']);
+  let cCounter = 0;
+  for (const row of rows) {
+    const roleName = get(row, rIdx);
+    if (!roleName) {
+      failed++;
+      reportRows.push([...row, 'Failed — Missing Name']);
+      continue;
     }
-
-    // Count the group itself as imported (even if it has no children)
-    if (group.children.length === 0 && hRow.length) {
-      imported++;
-      reportRows.push([...(hRow), 'Imported Successfully (group)']);
-    }
-
-    groups.push(group);
+    group.children.push({
+      id: `imp_c_${cCounter++}_${Date.now()}`,
+      name: roleName,
+      code: get(row, cIdx),
+      description: get(row, dIdx),
+      active: isActive(row, aIdx),
+      trade: null,
+    });
+    imported++;
+    reportRows.push([...row, 'Imported Successfully']);
   }
 
-  return { groups, imported, failed, reportRows };
+  return { groups: group.children.length > 0 ? [group] : [], imported, failed, reportRows };
 }
 
 function buildReportCSV(
@@ -161,7 +122,7 @@ function buildReportCSV(
   reportRows: string[][],
   filename: string,
 ): { csv: string; name: string } {
-  const effectiveHeaders = headers.length > 0 ? headers : ['Group Name', 'Role Name', 'Code', 'Description', 'Active'];
+  const effectiveHeaders = headers.length > 0 ? headers : ['Name', 'Code', 'Note'];
   const escape = (v: string) =>
     v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
   const allHeaders = [...effectiveHeaders, 'Import Status'];
@@ -319,17 +280,6 @@ function ReportDownloadRow({ filename, onDownload }: { filename: string; onDownl
     </div>
   );
 }
-
-// ─── Template CSV ─────────────────────────────────────────────────────────────
-const TEMPLATE_CSV = [
-  'Role Name,Code,Trade,Description',
-  'Project Manager,PM,Management,Leads overall project delivery across all disciplines.',
-  'Project Coordinator,PC,Management,Coordinates administrative and logistical project activities.',
-  'BIM Coordinator,BIMC,BIM,Coordinates model federation and clash detection.',
-  'Site Manager,SM,Construction,Runs daily site operations and subcontractor coordination.',
-  'Structural Engineer,SE,,Designs and reviews structural systems and components.',
-  'MEP Engineer,MEP,,Designs and coordinates mechanical electrical and plumbing systems.',
-].join('\n');
 
 export function downloadRolesTemplate() {
   const a = document.createElement('a');
@@ -548,8 +498,7 @@ export function ImportRolesModal({
                   {(phase === 'idle' || phase === 'confirming') && (
                     <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#595959', margin: 0 }}>
                       Importing a CSV or Excel file will replace all existing project roles with the data in the uploaded file.
-                      {' '}Your file must include the required fields: <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Role Name</strong>, <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Code</strong>, <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Trade</strong>, and <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Description</strong>.
-                      {' '}The Trade field is optional. If the provided value does not match an existing Trade in the project, it will be ignored during import.
+                      {' '}Your file must include the required first column: <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Name</strong>. <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Code</strong> and <strong style={{ fontWeight: 600, color: '#1D2C38' }}>Note</strong> are optional.
                     </p>
                   )}
 
@@ -667,7 +616,7 @@ export function ImportRolesModal({
                             This will completely replace all current roles
                           </p>
                           <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 400, lineHeight: '20px', color: '#7F1D1D', margin: 0 }}>
-                            All existing role groups and roles will be <strong style={{ fontWeight: 600 }}>permanently deleted</strong> and replaced with the contents of <strong style={{ fontWeight: 600 }}>{file.name}</strong>. This action cannot be reversed.
+                            All existing roles will be <strong style={{ fontWeight: 600 }}>permanently deleted</strong> and replaced with the contents of <strong style={{ fontWeight: 600 }}>{file.name}</strong>. This action cannot be reversed.
                           </p>
                         </div>
                       </div>

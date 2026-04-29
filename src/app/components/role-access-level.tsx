@@ -120,16 +120,21 @@ function buildFlatRoles(): FlatRole[] {
 
 const FLAT_ROLES = buildFlatRoles();
 
+function buildDefaultRolePermissions(): RolePermissions {
+  const perms: RolePermissions = {};
+  for (const app of APPS) {
+    const naSet = NOT_APPLICABLE_MAP[app.id];
+    perms[app.id] = (naSet?.has('none') ? 'read-only' : 'none') as AccessLevel;
+  }
+  return perms;
+}
+
 // Build initial permissions: all roles start as 'none' for all apps,
 // except where 'none' is Not Applicable — those use the minimum valid level.
 function buildInitialPermissions(): AllPermissions {
   const perms: AllPermissions = {};
   for (const role of FLAT_ROLES) {
-    perms[role.roleId] = {};
-    for (const app of APPS) {
-      const naSet = NOT_APPLICABLE_MAP[app.id];
-      perms[role.roleId][app.id] = (naSet?.has('none') ? 'read-only' : 'none') as AccessLevel;
-    }
+    perms[role.roleId] = buildDefaultRolePermissions();
   }
   return perms;
 }
@@ -1139,7 +1144,7 @@ export function RoleAccessLevel() {
   const tradeGroups = Array.from(tradeGroupsMap.entries());
 
   const selectedFlat  = FLAT_ROLES.find(r => r.roleId === selectedRoleId);
-  const livePerms     = permissions[selectedRoleId] ?? {};
+  const livePerms     = permissions[selectedRoleId] ?? buildDefaultRolePermissions();
   const displayPerms  = editMode ? draftPerms : livePerms;
   const hasChanges    = editMode && JSON.stringify(draftPerms) !== JSON.stringify(livePerms);
 
@@ -1190,7 +1195,7 @@ export function RoleAccessLevel() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, background: '#FFFFFF' }}>
+    <div data-dev-anchor="permissions-fallback-root" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, background: '#FFFFFF' }}>
 
       {/* ── Section Header ───────────────────────────────────────────────── */}
       <div style={{ height: 72, paddingLeft: 24, paddingRight: 24, background: '#FFFFFF', borderBottom: '1px solid #D9D9D9', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -1203,7 +1208,7 @@ export function RoleAccessLevel() {
       <div style={{ flex: 1, minHeight: 0, padding: 12, display: 'flex', gap: 12, overflow: 'hidden' }}>
 
         {/* ── LEFT: Roles Panel ────────────────────────────────────────── */}
-        <div style={{
+        <div data-dev-anchor="permissions-role-list" style={{
           width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column',
           border: '1px solid #D9D9D9', borderRadius: 8, overflow: 'hidden',
           background: '#FFFFFF',
@@ -1457,7 +1462,7 @@ export function RoleAccessLevel() {
 
           {/* Table container — header lives inside the scroll area so the
               separator always lines up with data rows exactly */}
-          <div style={{ flex: 1, minHeight: 0, border: '1px solid #D9D9D9', borderRadius: 8, overflow: 'hidden', background: '#FFFFFF' }}>
+          <div data-dev-anchor="permissions-matrix" style={{ flex: 1, minHeight: 0, border: '1px solid #D9D9D9', borderRadius: 8, overflow: 'hidden', background: '#FFFFFF' }}>
             <div style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }}>
               {/* min-width tracks the sum of all column widths so the table scrolls horizontally when columns are expanded */}
               <div style={{ minWidth: colWidths.app + ACCESS_LEVELS.reduce((s, l) => s + (colWidths[l.id] ?? DEFAULT_COL_WIDTHS[l.id]), 0) }}>

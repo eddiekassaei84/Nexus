@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DevPageContent } from '../components/dev-mode';
 import { lbsPrdDocuments } from './lbs-prd-content';
+import { orphanDataHandlingDocument } from './orphan-data-dev-content';
 
 function GuidanceList({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +12,7 @@ function GuidanceList({ children }: { children: React.ReactNode }) {
 }
 
 export const lbsDevContent: DevPageContent = {
-  documents: lbsPrdDocuments,
+  documents: [...lbsPrdDocuments, orphanDataHandlingDocument],
   annotations: [
     {
       id: 'view-lbs-tabs',
@@ -23,6 +24,19 @@ export const lbsDevContent: DevPageContent = {
       body: (
         <span>
           Each tab is a separate Location Breakdown Structure. The Primary LBS is the system of record for hierarchical containment, while Vertical Zones are a separate relational layer for spaces that continue across levels.
+        </span>
+      ),
+    },
+    {
+      id: 'view-lbs-orphan-data',
+      anchor: 'lbs-vertical-zones-tab',
+      mode: 'view',
+      layerId: 'notes',
+      placement: 'bottom',
+      title: 'Guidance Marker: Vertical Zones Can Hold Orphan Level References',
+      body: (
+        <span>
+          Vertical Zones reference Primary LBS levels. If a referenced level is soft-deleted or unavailable, keep the stored value and snapshot visible, label it as orphaned, and only allow replacement with active levels.
         </span>
       ),
     },
