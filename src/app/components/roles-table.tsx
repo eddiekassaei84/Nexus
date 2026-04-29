@@ -9,16 +9,16 @@ import trashPaths from '../../imports/svg-fjqvq36uqo';
 // siblingPaths import removed — AddSibling button removed from UI
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type RoleSortKey = 'name' | 'code' | 'description' | 'active';
+type RoleSortKey = 'name' | 'code' | 'description';
 type RoleSortDir = 'asc' | 'desc';
 interface RoleSortState { key: RoleSortKey; dir: RoleSortDir }
 
 interface RoleChild {
-  id: string; name: string; code: string; description: string; active: boolean;
+  id: string; name: string; code: string; description: string;
   trade: string | null;
 }
 interface RoleGroup {
-  id: string; name: string; code: string; description: string; active: boolean; children: RoleChild[];
+  id: string; name: string; code: string; description: string; children: RoleChild[];
 }
 
 // DragItem carries the label for the floating preview.
@@ -32,72 +32,72 @@ function uid() { return `new_${Date.now()}_${++_uid}`; }
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const ROLES_DATA: RoleGroup[] = [
-  { id: 'construction', name: 'Construction', code: 'CONST', description: 'Oversees all on-site construction activities and field operations.', active: true, children: [
-    { id: 'cm',    name: 'Construction Manager',      code: 'CM',    description: 'Manages overall construction project delivery.',             active: true,  trade: 't-cm'   },
-    { id: 'sm',    name: 'Site Manager',              code: 'SM',    description: 'Runs daily site operations and subcontractor coordination.', active: true,  trade: 't-gc'   },
-    { id: 'supt',  name: 'Superintendent',            code: 'SUPT',  description: 'Coordinates day-to-day field activities and crew scheduling.',active: true, trade: 't-gc'   },
-    { id: 'gsupt', name: 'General Superintendent',    code: 'GSUPT', description: 'Senior oversight of multiple superintendents on large sites.',active: true, trade: 't-gc'   },
-    { id: 'fe',    name: 'Field Engineer',            code: 'FE',    description: 'Provides engineering support directly on site.',            active: true,  trade: 't-gc'   },
-    { id: 'dsupt', name: 'Discipline Superintendent', code: 'DSUPT', description: 'Leads a specific trade or discipline team on site.',        active: true,  trade: 't-gc'   },
+  { id: 'construction', name: 'Construction', code: 'CONST', description: 'Oversees all on-site construction activities and field operations.', children: [
+    { id: 'cm',    name: 'Construction Manager',      code: 'CM',    description: 'Manages overall construction project delivery.',             trade: 't-cm'   },
+    { id: 'sm',    name: 'Site Manager',              code: 'SM',    description: 'Runs daily site operations and subcontractor coordination.', trade: 't-gc'   },
+    { id: 'supt',  name: 'Superintendent',            code: 'SUPT',  description: 'Coordinates day-to-day field activities and crew scheduling.', trade: 't-gc'   },
+    { id: 'gsupt', name: 'General Superintendent',    code: 'GSUPT', description: 'Senior oversight of multiple superintendents on large sites.', trade: 't-gc'   },
+    { id: 'fe',    name: 'Field Engineer',            code: 'FE',    description: 'Provides engineering support directly on site.',            trade: 't-gc'   },
+    { id: 'dsupt', name: 'Discipline Superintendent', code: 'DSUPT', description: 'Leads a specific trade or discipline team on site.',        trade: 't-gc'   },
   ]},
-  { id: 'owner', name: 'Owner', code: 'OWN', description: 'Client-side ownership roles responsible for project decisions and representation.', active: true, children: [
-    { id: 'or',  name: 'Owner Representative',  code: 'OR',  description: 'Represents the owner on-site for day-to-day decisions.',      active: true,  trade: 't-cm'   },
-    { id: 'cr',  name: 'Client Representative', code: 'CR',  description: 'Acts on behalf of the client at key project milestones.',      active: true,  trade: 't-cm'   },
-    { id: 'dev', name: 'Developer',              code: 'DEV', description: 'Oversees property development from brief to handover.',        active: true,  trade: 't-cm'   },
-    { id: 'am',  name: 'Asset Manager',          code: 'AM',  description: 'Manages long-term performance and value of project assets.',   active: true,  trade: 't-fac'  },
+  { id: 'owner', name: 'Owner', code: 'OWN', description: 'Client-side ownership roles responsible for project decisions and representation.', children: [
+    { id: 'or',  name: 'Owner Representative',  code: 'OR',  description: 'Represents the owner on-site for day-to-day decisions.',      trade: 't-cm'   },
+    { id: 'cr',  name: 'Client Representative', code: 'CR',  description: 'Acts on behalf of the client at key project milestones.',      trade: 't-cm'   },
+    { id: 'dev', name: 'Developer',              code: 'DEV', description: 'Oversees property development from brief to handover.',        trade: 't-cm'   },
+    { id: 'am',  name: 'Asset Manager',          code: 'AM',  description: 'Manages long-term performance and value of project assets.',   trade: 't-fac'  },
   ]},
-  { id: 'management', name: 'Management', code: 'MGMT', description: 'Executive and senior leadership responsible for strategic project decisions.', active: true, children: [
-    { id: 'pm',  name: 'Project Manager',           code: 'PM',  description: 'Leads overall project delivery across all disciplines.',       active: true,  trade: 't-cm'   },
-    { id: 'dpm', name: 'Deputy Project Manager',    code: 'DPM', description: 'Supports the PM and steps in during absence.',                active: true,  trade: 't-cm'   },
-    { id: 'apm', name: 'Assistant Project Manager', code: 'APM', description: 'Assists the PM with scheduling, reporting and coordination.', active: true,  trade: 't-cm'   },
-    { id: 'pe',  name: 'Project Engineer',           code: 'PE',  description: 'Provides technical engineering oversight across packages.',    active: true,  trade: 't-cm'   },
-    { id: 'pc',  name: 'Project Coordinator',        code: 'PC',  description: 'Coordinates administrative and logistical project activities.',active: true, trade: 't-cm'   },
+  { id: 'management', name: 'Management', code: 'MGMT', description: 'Executive and senior leadership responsible for strategic project decisions.', children: [
+    { id: 'pm',  name: 'Project Manager',           code: 'PM',  description: 'Leads overall project delivery across all disciplines.',       trade: 't-cm'   },
+    { id: 'dpm', name: 'Deputy Project Manager',    code: 'DPM', description: 'Supports the PM and steps in during absence.',                trade: 't-cm'   },
+    { id: 'apm', name: 'Assistant Project Manager', code: 'APM', description: 'Assists the PM with scheduling, reporting and coordination.', trade: 't-cm'   },
+    { id: 'pe',  name: 'Project Engineer',           code: 'PE',  description: 'Provides technical engineering oversight across packages.',    trade: 't-cm'   },
+    { id: 'pc',  name: 'Project Coordinator',        code: 'PC',  description: 'Coordinates administrative and logistical project activities.', trade: 't-cm'   },
   ]},
-  { id: 'design', name: 'Design', code: 'DSN', description: 'Responsible for architectural and design documentation.', active: true, children: [
-    { id: 'arch', name: 'Architect',          code: 'ARCH', description: 'Leads architectural design and drawing production.',             active: true,  trade: 't-arch' },
-    { id: 'id',   name: 'Interior Designer',  code: 'ID',   description: 'Develops interior layouts, finishes and spatial design.',        active: true,  trade: 't-arch' },
-    { id: 'dm',   name: 'Design Manager',     code: 'DM',   description: 'Coordinates design outputs across all consultants.',             active: true,  trade: 't-arch' },
-    { id: 'dc',   name: 'Design Coordinator', code: 'DC',   description: 'Manages design deliverables, reviews and issue registers.',       active: false, trade: 't-arch' },
+  { id: 'design', name: 'Design', code: 'DSN', description: 'Responsible for architectural and design documentation.', children: [
+    { id: 'arch', name: 'Architect',          code: 'ARCH', description: 'Leads architectural design and drawing production.',             trade: 't-arch' },
+    { id: 'id',   name: 'Interior Designer',  code: 'ID',   description: 'Develops interior layouts, finishes and spatial design.',        trade: 't-arch' },
+    { id: 'dm',   name: 'Design Manager',     code: 'DM',   description: 'Coordinates design outputs across all consultants.',             trade: 't-arch' },
+    { id: 'dc',   name: 'Design Coordinator', code: 'DC',   description: 'Manages design deliverables, reviews and issue registers.',       trade: 't-arch' },
   ]},
-  { id: 'engineering', name: 'Engineering', code: 'ENG', description: 'Provides technical engineering support, design review, and field queries.', active: true, children: [
-    { id: 'se',  name: 'Structural Engineer',      code: 'SE',  description: 'Designs and reviews structural systems and load paths.',       active: true,  trade: 't-seng'   },
-    { id: 'ce',  name: 'Civil Engineer',           code: 'CE',  description: 'Manages civil works including roads, drainage and earthworks.',active: true,  trade: 't-civil'  },
-    { id: 'me',  name: 'Mechanical Engineer',      code: 'ME',  description: 'Designs HVAC, hydraulics and mechanical services.',            active: true,  trade: 't-mepeng' },
-    { id: 'ee',  name: 'Electrical Engineer',      code: 'EE',  description: 'Oversees electrical systems, power distribution and lighting.',active: true,  trade: 't-mepeng' },
-    { id: 'ple', name: 'Plumbing Engineer',        code: 'PLE', description: 'Designs and reviews plumbing and sanitary systems.',           active: true,  trade: 't-plmb'   },
-    { id: 'fpe', name: 'Fire Protection Engineer', code: 'FPE', description: 'Designs fire suppression, detection and life-safety systems.', active: false, trade: 't-fire'   },
+  { id: 'engineering', name: 'Engineering', code: 'ENG', description: 'Provides technical engineering support, design review, and field queries.', children: [
+    { id: 'se',  name: 'Structural Engineer',      code: 'SE',  description: 'Designs and reviews structural systems and load paths.',       trade: 't-seng'   },
+    { id: 'ce',  name: 'Civil Engineer',           code: 'CE',  description: 'Manages civil works including roads, drainage and earthworks.', trade: 't-civil'  },
+    { id: 'me',  name: 'Mechanical Engineer',      code: 'ME',  description: 'Designs HVAC, hydraulics and mechanical services.',            trade: 't-mepeng' },
+    { id: 'ee',  name: 'Electrical Engineer',      code: 'EE',  description: 'Oversees electrical systems, power distribution and lighting.', trade: 't-mepeng' },
+    { id: 'ple', name: 'Plumbing Engineer',        code: 'PLE', description: 'Designs and reviews plumbing and sanitary systems.',           trade: 't-plmb'   },
+    { id: 'fpe', name: 'Fire Protection Engineer', code: 'FPE', description: 'Designs fire suppression, detection and life-safety systems.', trade: 't-fire'   },
   ]},
-  { id: 'bim', name: 'BIM', code: 'BIM', description: 'Manages digital delivery, model coordination, and BIM standards compliance.', active: true, children: [
-    { id: 'bimm',  name: 'BIM Manager',          code: 'BIMM',  description: 'Sets BIM strategy, standards and execution plan.',             active: true,  trade: 't-bim' },
-    { id: 'bimc',  name: 'BIM Coordinator',       code: 'BIMC',  description: 'Coordinates model federation and clash detection.',            active: true,  trade: 't-bim' },
-    { id: 'bimmd', name: 'BIM Modeler',           code: 'BIMMD', description: 'Produces and maintains discipline-specific BIM models.',       active: true,  trade: 't-bim' },
-    { id: 'vdc',   name: 'VDC Manager',           code: 'VDC',   description: 'Leads virtual design and construction workflows.',             active: true,  trade: 't-bim' },
-    { id: 'ddl',   name: 'Digital Delivery Lead', code: 'DDL',   description: 'Manages digital handover, CDE and information requirements.',  active: false, trade: 't-bim' },
+  { id: 'bim', name: 'BIM', code: 'BIM', description: 'Manages digital delivery, model coordination, and BIM standards compliance.', children: [
+    { id: 'bimm',  name: 'BIM Manager',          code: 'BIMM',  description: 'Sets BIM strategy, standards and execution plan.',             trade: 't-bim' },
+    { id: 'bimc',  name: 'BIM Coordinator',       code: 'BIMC',  description: 'Coordinates model federation and clash detection.',            trade: 't-bim' },
+    { id: 'bimmd', name: 'BIM Modeler',           code: 'BIMMD', description: 'Produces and maintains discipline-specific BIM models.',       trade: 't-bim' },
+    { id: 'vdc',   name: 'VDC Manager',           code: 'VDC',   description: 'Leads virtual design and construction workflows.',             trade: 't-bim' },
+    { id: 'ddl',   name: 'Digital Delivery Lead', code: 'DDL',   description: 'Manages digital handover, CDE and information requirements.',  trade: 't-bim' },
   ]},
-  { id: 'estimating', name: 'Estimating', code: 'EST', description: 'Prepares cost estimates, bid packages, and quantity take-offs.', active: true, children: [
-    { id: 'est',  name: 'Estimator',         code: 'EST',  description: 'Prepares detailed cost estimates and pricing submissions.',    active: true,  trade: 't-cm' },
-    { id: 'sest', name: 'Senior Estimator',  code: 'SEST', description: 'Leads estimation team and reviews complex bid packages.',      active: true,  trade: 't-cm' },
-    { id: 'qs',   name: 'Quantity Surveyor', code: 'QS',   description: 'Manages contract quantities, variations and valuations.',     active: true,  trade: 't-cm' },
-    { id: 'ceng', name: 'Cost Engineer',     code: 'CENG', description: 'Tracks project cost performance and forecasting.',            active: false, trade: 't-cm' },
+  { id: 'estimating', name: 'Estimating', code: 'EST', description: 'Prepares cost estimates, bid packages, and quantity take-offs.', children: [
+    { id: 'est',  name: 'Estimator',         code: 'EST',  description: 'Prepares detailed cost estimates and pricing submissions.',    trade: 't-cm' },
+    { id: 'sest', name: 'Senior Estimator',  code: 'SEST', description: 'Leads estimation team and reviews complex bid packages.',      trade: 't-cm' },
+    { id: 'qs',   name: 'Quantity Surveyor', code: 'QS',   description: 'Manages contract quantities, variations and valuations.',     trade: 't-cm' },
+    { id: 'ceng', name: 'Cost Engineer',     code: 'CENG', description: 'Tracks project cost performance and forecasting.',            trade: 't-cm' },
   ]},
-  { id: 'planning', name: 'Planning', code: 'PLAN', description: 'Responsible for project scheduling, look-ahead planning, and progress tracking.', active: true, children: [
-    { id: 'sch',    name: 'Scheduler',         code: 'SCH',    description: 'Builds and maintains the project master schedule.',          active: true,  trade: 't-cm' },
-    { id: 'plneng', name: 'Planning Engineer', code: 'PLNENG', description: 'Develops short-interval schedules and look-ahead plans.',    active: true,  trade: 't-cm' },
-    { id: 'sa',     name: 'Schedule Analyst',  code: 'SA',     description: 'Analyses schedule performance and delay impacts.',          active: true,  trade: 't-cm' },
-    { id: 'ctrl',   name: 'Controls Engineer', code: 'CTRL',   description: 'Integrates cost and schedule for earned value reporting.',   active: false, trade: 't-cm' },
+  { id: 'planning', name: 'Planning', code: 'PLAN', description: 'Responsible for project scheduling, look-ahead planning, and progress tracking.', children: [
+    { id: 'sch',    name: 'Scheduler',         code: 'SCH',    description: 'Builds and maintains the project master schedule.',          trade: 't-cm' },
+    { id: 'plneng', name: 'Planning Engineer', code: 'PLNENG', description: 'Develops short-interval schedules and look-ahead plans.',    trade: 't-cm' },
+    { id: 'sa',     name: 'Schedule Analyst',  code: 'SA',     description: 'Analyses schedule performance and delay impacts.',          trade: 't-cm' },
+    { id: 'ctrl',   name: 'Controls Engineer', code: 'CTRL',   description: 'Integrates cost and schedule for earned value reporting.',   trade: 't-cm' },
   ]},
-  { id: 'commercial', name: 'Commercial', code: 'COM', description: 'Manages contracts, procurement, cost control and supply chain.', active: true, children: [
-    { id: 'comm', name: 'Commercial Manager',   code: 'COM',  description: 'Oversees all commercial, contractual and financial activities.',active: true,  trade: 't-cm' },
-    { id: 'conm', name: 'Contracts Manager',    code: 'CONM', description: 'Manages contract administration and dispute resolution.',      active: true,  trade: 't-cm' },
-    { id: 'proc', name: 'Procurement Manager',  code: 'PROC', description: 'Leads procurement strategy and vendor selection.',             active: true,  trade: 't-cm' },
-    { id: 'cmg',  name: 'Cost Manager',         code: 'CMG',  description: 'Tracks budgets, forecasts and cost-to-complete.',              active: true,  trade: 't-cm' },
-    { id: 'scm',  name: 'Supply Chain Manager', code: 'SCM',  description: 'Manages supplier relationships and logistics coordination.',   active: false, trade: 't-cm' },
+  { id: 'commercial', name: 'Commercial', code: 'COM', description: 'Manages contracts, procurement, cost control and supply chain.', children: [
+    { id: 'comm', name: 'Commercial Manager',   code: 'COM',  description: 'Oversees all commercial, contractual and financial activities.', trade: 't-cm' },
+    { id: 'conm', name: 'Contracts Manager',    code: 'CONM', description: 'Manages contract administration and dispute resolution.',      trade: 't-cm' },
+    { id: 'proc', name: 'Procurement Manager',  code: 'PROC', description: 'Leads procurement strategy and vendor selection.',             trade: 't-cm' },
+    { id: 'cmg',  name: 'Cost Manager',         code: 'CMG',  description: 'Tracks budgets, forecasts and cost-to-complete.',              trade: 't-cm' },
+    { id: 'scm',  name: 'Supply Chain Manager', code: 'SCM',  description: 'Manages supplier relationships and logistics coordination.',   trade: 't-cm' },
   ]},
-  { id: 'safety', name: 'Safety', code: 'SAFE', description: 'Ensures compliance with health, safety, and environmental standards.', active: true, children: [
-    { id: 'hsm',  name: 'Safety Manager',  code: 'HSM',  description: 'Leads the site health and safety management system.',          active: true,  trade: 't-safe' },
-    { id: 'hsem', name: 'HSE Manager',     code: 'HSEM', description: 'Manages health, safety and environmental compliance.',         active: true,  trade: 't-safe' },
-    { id: 'so',   name: 'Safety Officer',  code: 'SO',   description: 'Conducts inspections, toolbox talks and incident reporting.',  active: true,  trade: 't-safe' },
-    { id: 'ehsc', name: 'EHS Coordinator', code: 'EHSC', description: 'Coordinates environmental, health and safety documentation.',  active: false, trade: 't-safe' },
+  { id: 'safety', name: 'Safety', code: 'SAFE', description: 'Ensures compliance with health, safety, and environmental standards.', children: [
+    { id: 'hsm',  name: 'Safety Manager',  code: 'HSM',  description: 'Leads the site health and safety management system.',          trade: 't-safe' },
+    { id: 'hsem', name: 'HSE Manager',     code: 'HSEM', description: 'Manages health, safety and environmental compliance.',         trade: 't-safe' },
+    { id: 'so',   name: 'Safety Officer',  code: 'SO',   description: 'Conducts inspections, toolbox talks and incident reporting.',  trade: 't-safe' },
+    { id: 'ehsc', name: 'EHS Coordinator', code: 'EHSC', description: 'Coordinates environmental, health and safety documentation.',  trade: 't-safe' },
   ]},
 ];
 
@@ -427,15 +427,6 @@ function RoleHeaderCell({
   );
 }
 
-// ─── Toggle switch ────────────────────────────────────────────────────────────
-function ToggleSwitch({ active, onChange }: { active: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div onClick={() => onChange(!active)} style={{ width: 40, height: 20, borderRadius: 10, background: active ? '#FF4D00' : '#D9D9D9', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: 2, left: active ? 22 : 2, width: 16, height: 16, borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s' }} />
-    </div>
-  );
-}
-
 // ─── Inline edit input — §26 Inline Error Expansion ──────────────────────────
 function EditInput({ value, onChange, placeholder, error, errorMessage }: {
   value: string; onChange: (v: string) => void; placeholder?: string;
@@ -662,11 +653,6 @@ export function RolesTable() {
   // ── View state ────────────────────────────────────────────────────────────
   const [search,     setSearch]     = useState('');
   const [sortState,  setSortState]  = useState<RoleSortState | null>(null);
-  const [activeMap,  setActiveMap]  = useState<Record<string, boolean>>(() => {
-    const m: Record<string, boolean> = {};
-    ROLES_DATA.forEach(g => { m[g.id] = g.active; g.children.forEach(c => { m[c.id] = c.active; }); });
-    return m;
-  });
   const [clearHover, setClearHover] = useState(false);
   const [colWidths, setColWidths]   = useState({
     nameView: COL_ROLE_NAME_VIEW,
@@ -842,14 +828,6 @@ export function RolesTable() {
     setValidationAttempted(true);
     if (computeEditErrors(editGroups).size > 0) return;
     setLiveData(editGroups);
-    setActiveMap(prev => {
-      const next = { ...prev };
-      editGroups.forEach(g => {
-        if (!(g.id in next)) next[g.id] = true;
-        g.children.forEach(c => { if (!(c.id in next)) next[c.id] = true; });
-      });
-      return next;
-    });
     setEditMode(false); setEditGroups([]);
   }
 
@@ -880,9 +858,9 @@ export function RolesTable() {
     setEditGroups(p => {
       const arr = JSON.parse(JSON.stringify(p)) as RoleGroup[];
       if (arr.length === 0) {
-        arr.push({ id: uid(), name: 'Roles', code: '', description: '', active: true, children: [] });
+        arr.push({ id: uid(), name: 'Roles', code: '', description: '', children: [] });
       }
-      arr[arr.length - 1].children.push({ id: uid(), name: '', code: '', description: '', active: true, trade: null });
+      arr[arr.length - 1].children.push({ id: uid(), name: '', code: '', description: '', trade: null });
       return arr;
     });
     scrollToBottom();
@@ -891,27 +869,6 @@ export function RolesTable() {
   // ── Sort ──────────────────────────────────────────────────────────────────
   function handleSort(key: RoleSortKey) {
     setSortState(p => !p || p.key !== key ? { key, dir: 'asc' } : p.dir === 'asc' ? { key, dir: 'desc' } : null);
-  }
-
-  // ── Toggle active ─────────────────────────────────────────────────────────
-  function toggleActive(id: string) {
-    const group = liveData.find(g => g.id === id);
-    setActiveMap(p => {
-      const n = { ...p, [id]: !p[id] };
-      if (group) {
-        // Toggling a group → all children follow
-        const s = n[id];
-        group.children.forEach(c => { n[c.id] = s; });
-      } else {
-        // Toggling a child → derive group state from all siblings
-        const parentGroup = liveData.find(g => g.children.some(c => c.id === id));
-        if (parentGroup) {
-          const anyActive = parentGroup.children.some(c => (c.id === id ? n[id] : (n[c.id] ?? c.active)));
-          n[parentGroup.id] = anyActive;
-        }
-      }
-      return n;
-    });
   }
 
   // ── Filtered + sorted ─────────────────────────────────────────────────────
@@ -933,13 +890,12 @@ export function RolesTable() {
         if      (key === 'name')        { av = a.name;        bv = b.name; }
         else if (key === 'code')        { av = a.code;        bv = b.code; }
         else if (key === 'description') { av = a.description; bv = b.description; }
-        else if (key === 'active')      { av = activeMap[a.id] ?? a.active; bv = activeMap[b.id] ?? b.active; }
         if (typeof av === 'boolean') return ((bv ? 1 : 0) - (av ? 1 : 0)) * mul;
         return av.localeCompare(bv as string) * mul;
       });
     }
     return roles;
-  }, [q, sortState, activeMap, liveData]);
+  }, [q, sortState, liveData]);
 
   const flatEditRoles = useMemo(() => {
     const roles: (RoleChild & { groupId: string })[] = [];
@@ -1045,7 +1001,6 @@ export function RolesTable() {
               </div>
             );
             return flatViewRoles.map(role => {
-              const childActive = activeMap[role.id] ?? role.active;
               return (
                 <div key={role.id}
                   style={{
@@ -1058,17 +1013,17 @@ export function RolesTable() {
                   onMouseLeave={e => (e.currentTarget.style.background = 'white')}
                 >
                   <div style={{ width: colWidths.nameView, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 12, paddingRight: 8, overflow: 'hidden' }}>
-                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#1D2C38' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: '#1D2C38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {highlightText(role.name, search)}
                     </span>
                   </div>
                   <div style={{ width: colWidths.code, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8 }}>
-                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#262626' : '#BFBFBF', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: '#262626', whiteSpace: 'nowrap' }}>
                       {highlightText(role.code, search)}
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 8, overflow: 'hidden' }}>
-                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: childActive ? '#262626' : '#BFBFBF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 400, fontSize: 13, color: '#262626', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {highlightText(role.description, search)}
                     </span>
                   </div>

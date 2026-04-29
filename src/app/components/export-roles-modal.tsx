@@ -3,11 +3,11 @@ import svgPathsClose from '../../imports/svg-uayoveoicl';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RoleChild {
-  id: string; name: string; code: string; description: string; active: boolean;
+  id: string; name: string; code: string; description: string;
   trade: string | null;
 }
 interface RoleGroup {
-  id: string; name: string; code: string; description: string; active: boolean; children: RoleChild[];
+  id: string; name: string; code: string; description: string; children: RoleChild[];
 }
 // ─── Icons ────────────────────────────────────────────────────────────────────
 function CloseIcon() {

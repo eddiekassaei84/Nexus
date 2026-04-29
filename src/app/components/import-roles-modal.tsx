@@ -7,11 +7,11 @@ import summaryIcons from '../../imports/svg-hjxz06n11w';
 type Phase = 'idle' | 'confirming' | 'uploading' | 'processing' | 'summary';
 
 interface RoleChild {
-  id: string; name: string; code: string; description: string; active: boolean;
+  id: string; name: string; code: string; description: string;
   trade: string | null;
 }
 interface RoleGroup {
-  id: string; name: string; code: string; description: string; active: boolean; children: RoleChild[];
+  id: string; name: string; code: string; description: string; children: RoleChild[];
 }
 
 interface SummaryData {
@@ -76,10 +76,8 @@ function parseIntoRoles(
   const rIdx = colIdx(/role.?name/i) >= 0 ? colIdx(/role.?name/i) : colIdx(/^name$/i) >= 0 ? colIdx(/^name$/i) : 0;
   const cIdx = colIdx(/^code$/i);
   const dIdx = colIdx(/desc|note/i);
-  const aIdx = colIdx(/active/i);
 
   const get = (row: string[], idx: number) => (idx >= 0 && row[idx] !== undefined ? row[idx].trim() : '');
-  const isActive = (row: string[], idx: number) => idx < 0 ? true : !/^(no|false|0)$/i.test(get(row, idx));
 
   const reportRows: string[][] = [];
   let failed = 0;
@@ -90,7 +88,6 @@ function parseIntoRoles(
     name: 'Roles',
     code: 'ROLES',
     description: '',
-    active: true,
     children: [],
   };
 
@@ -107,7 +104,6 @@ function parseIntoRoles(
       name: roleName,
       code: get(row, cIdx),
       description: get(row, dIdx),
-      active: isActive(row, aIdx),
       trade: null,
     });
     imported++;
